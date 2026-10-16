@@ -322,11 +322,11 @@ module mdp_book #(
                     tb_bid_lvl_q <= bid_lvl_c;
                     tb_ask_vld_q <= ask_vld_c;
                     tb_ask_lvl_q <= ask_lvl_c;
+                    ord_sym      <= 16'(w_sym);      
+                    ord_lvl      <= ask_lvl_c;       
+                    ord_qty      <= cfg_qty;         
                     if (cond_c && !fired[w_sym]) begin
                         ord_valid    <= 1'b1;
-                        ord_sym      <= 16'(w_sym);
-                        ord_lvl      <= ask_lvl_c;
-                        ord_qty      <= cfg_qty;
                         fired[w_sym] <= 1'b1;
                     end else if (!cond_c) begin
                         fired[w_sym] <= 1'b0;
