@@ -13,6 +13,11 @@
     "tick_to_trade_cycles": 5,
     "tick_to_trade_ns_at_156p25MHz": 32.0
   },
+  "mtu_frame": {
+    "messages": 91,
+    "msgq_depth": 64,
+    "peak_msgq_occupancy": 30
+  },
   "random_coverage": {
     "bad_frames": 147,
     "frames": 4800,

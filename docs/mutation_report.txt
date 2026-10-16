@@ -1,0 +1,16 @@
+[KILLED]   trigger compare off-by-one  (4/10 tests failed)
+[KILLED]   threshold exactly one window above base  (1/10 tests failed)
+[KILLED]   Del/Exe never clears occupancy bit  (4/10 tests failed)
+[KILLED]   duplicate order ref not detected  (2/10 tests failed)
+[KILLED]   execute not clamped to remaining shares  (2/10 tests failed)
+[KILLED]   Add does not update level quantity  (4/10 tests failed)
+[KILLED]   trigger never re-arms  (4/10 tests failed)
+[KILLED]   message bypass also enqueues  (9/10 tests failed)
+[KILLED]   order lost when FIFO non-empty and TX ready  (1/10 tests failed)
+[KILLED]   price byte order  (9/10 tests failed)
+[KILLED]   message count not decremented  (2/10 tests failed)
+[KILLED]   UDP destination-port check removed  (2/10 tests failed)
+[KILLED]   IP protocol check removed  (2/10 tests failed)
+[KILLED]   last-beat tkeep wrong  (9/10 tests failed)
+
+14 killed, 0 survived, of 14 mutants
