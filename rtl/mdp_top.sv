@@ -1,8 +1,9 @@
 // mdp_top -- market-data -> order pipeline.
 //
-//   s_axis -> mdp_hdr_parse -> mdp_msg_asm -> msg FIFO -> mdp_book
+//   s_axis -> mdp_hdr_parse -> mdp_msg_asm -> msg FIFO* -> mdp_book
 //                                                           | order request
-//                                          m_axis <- mdp_order_tx <- order FIFO
+//                                          m_axis <- mdp_order_tx <- order FIFO*
+//   (* both FIFOs are bypassed when empty, so an idle pipeline adds no queueing delay)
 //
 // Single clock domain (target 156.25 MHz, 64-bit datapath == 10G).  The MAC/PCS
 // and the clock-domain crossing into this domain are outside this repo (see
@@ -11,7 +12,7 @@ module mdp_top #(
     parameter int SYM_W   = 2,
     parameter int LVL_W   = 6,
     parameter int ORD_AW  = 10,
-    parameter int MSGQ_AW = 5,
+    parameter int MSGQ_AW = 6,
     parameter int ORDQ_AW = 3
 ) (
     input  logic        clk,
@@ -82,13 +83,22 @@ module mdp_top #(
         .m_valid(m_valid), .m_data(m_data)
     );
 
-    // ---- message FIFO ------------------------------------------------------
-    logic         mq_empty, mq_rd, mq_ovf;
+    // ---- message FIFO with bypass -------------------------------------------
+    // When the FIFO is empty and the book can accept, a message goes straight
+    // into the book (saves the FIFO write + pop); otherwise it is queued.
+    logic         mq_empty, mq_rd, mq_wr, mq_ovf;
     logic [127:0] mq_data;
+    logic         book_in_valid, book_in_ready;
+    logic [127:0] book_in_data;
+
+    assign book_in_valid = !mq_empty || m_valid;
+    assign book_in_data  = mq_empty ? m_data : mq_data;
+    assign mq_rd         = !mq_empty && book_in_ready;
+    assign mq_wr         = m_valid && !(mq_empty && book_in_ready);
 
     mdp_fifo #(.W(128), .AW(MSGQ_AW)) u_msg_fifo (
         .clk(clk), .rst(rst),
-        .wr_en(m_valid), .wr_data(m_data),
+        .wr_en(mq_wr), .wr_data(m_data),
         .rd_en(mq_rd), .rd_data(mq_data),
         .empty(mq_empty), .count(dbg_msgq_count), .ovf(mq_ovf)
     );
@@ -96,34 +106,46 @@ module mdp_top #(
     // ---- book + trigger ----------------------------------------------------
     logic        ord_valid;
     logic [15:0] ord_sym;
-    logic [31:0] ord_px, ord_qty;
+    logic [LVL_W-1:0] ord_lvl;
+    logic [31:0] ord_qty;
 
     mdp_book #(.SYM_W(SYM_W), .LVL_W(LVL_W), .ORD_AW(ORD_AW)) u_book (
         .clk(clk), .rst(rst),
-        .f_empty(mq_empty), .f_data(mq_data), .f_rd(mq_rd), .ready(o_ready),
+        .in_valid(book_in_valid), .in_data(book_in_data), .in_ready(book_in_ready),
+        .ready(o_ready),
         .cfg_base_px(cfg_base_px), .cfg_buy_px(cfg_buy_px),
         .cfg_qty(cfg_qty), .cfg_en(cfg_en),
-        .ord_valid(ord_valid), .ord_sym(ord_sym), .ord_px(ord_px), .ord_qty(ord_qty),
+        .ord_valid(ord_valid), .ord_sym(ord_sym), .ord_lvl(ord_lvl), .ord_qty(ord_qty),
         .drop_valid(tap_drop_valid), .drop_reason(tap_drop_reason),
         .tob_valid(tap_tob_valid), .tob_sym(tap_tob_sym),
         .tob_bid_vld(tap_tob_bid_vld), .tob_bid_px(tap_tob_bid_px),
         .tob_ask_vld(tap_tob_ask_vld), .tob_ask_px(tap_tob_ask_px)
     );
 
-    // ---- order FIFO + transmitter -----------------------------------------
-    logic        oq_empty, oq_rd, oq_ovf;
+    // ---- order FIFO with bypass + transmitter -------------------------------
+    wire [31:0] ord_px   = cfg_base_px + 32'(ord_lvl);
+    wire [79:0] ord_word = {ord_sym, ord_px, ord_qty};
+
+    logic        oq_empty, oq_rd, oq_wr, oq_ovf;
     logic [79:0] oq_data;
+    logic        tx_req_valid, tx_req_ready;
+    logic [79:0] tx_req_data;
+
+    assign tx_req_valid = !oq_empty || ord_valid;
+    assign tx_req_data  = oq_empty ? ord_word : oq_data;
+    assign oq_rd        = !oq_empty && tx_req_ready;
+    assign oq_wr        = ord_valid && !(oq_empty && tx_req_ready);
 
     mdp_fifo #(.W(80), .AW(ORDQ_AW)) u_ord_fifo (
         .clk(clk), .rst(rst),
-        .wr_en(ord_valid), .wr_data({ord_sym, ord_px, ord_qty}),
+        .wr_en(oq_wr), .wr_data(ord_word),
         .rd_en(oq_rd), .rd_data(oq_data),
         .empty(oq_empty), .count(dbg_ordq_count), .ovf(oq_ovf)
     );
 
     mdp_order_tx u_tx (
         .clk(clk), .rst(rst),
-        .q_empty(oq_empty), .q_data(oq_data), .q_rd(oq_rd),
+        .req_valid(tx_req_valid), .req_data(tx_req_data), .req_ready(tx_req_ready),
         .cfg_dst_mac(cfg_dst_mac), .cfg_src_mac(cfg_src_mac),
         .cfg_src_ip(cfg_src_ip), .cfg_dst_ip(cfg_dst_ip),
         .cfg_sport(cfg_sport), .cfg_odport(cfg_odport), .cfg_ip_csum(cfg_ip_csum),

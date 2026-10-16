@@ -5,16 +5,17 @@
 //   UDP 8 (checksum 0, legal for IPv4) | order 16 | 2 pad
 // Order payload: 'O' 'B' sym[2] client_id[4] price[4] qty[4]
 //
-// Beat 0 is registered the cycle after the request is popped; the 8 beats
-// leave back-to-back.  The static header could instead be streamed while the
-// book is still computing (cut-through) -- see docs/SPEC.md, optimisation list.
+// A request is taken in any cycle where `req_valid && req_ready` (req_ready =
+// idle); beat 0 is registered on that same clock edge and the 8 beats leave
+// back-to-back.  The static header could instead be streamed while the book is
+// still computing (cut-through) -- see docs/SPEC.md, optimisation list.
 module mdp_order_tx (
     input  logic        clk,
     input  logic        rst,
-    // order-request FIFO (first-word-fall-through): {sym[15:0], px[31:0], qty[31:0]}
-    input  logic        q_empty,
-    input  logic [79:0] q_data,
-    output logic        q_rd,
+    // order request: {sym[15:0], px[31:0], qty[31:0]}
+    input  logic        req_valid,
+    input  logic [79:0] req_data,
+    output logic        req_ready,
     // static configuration
     input  logic [47:0] cfg_dst_mac,
     input  logic [47:0] cfg_src_mac,
@@ -34,9 +35,9 @@ module mdp_order_tx (
     logic [2:0]   beat;
     logic [31:0]  cid;
 
-    wire [15:0] o_sym = q_data[79:64];
-    wire [31:0] o_px  = q_data[63:32];
-    wire [31:0] o_qty = q_data[31:0];
+    wire [15:0] o_sym = req_data[79:64];
+    wire [31:0] o_px  = req_data[63:32];
+    wire [31:0] o_qty = req_data[31:0];
 
     // network-order frame, first byte in the MSBs
     wire [479:0] f_be = {cfg_dst_mac, cfg_src_mac, 16'h0800,
@@ -51,7 +52,7 @@ module mdp_order_tx (
         for (int i = 0; i < 60; i++) f_le[8*i +: 8] = f_be[479 - 8*i -: 8];
     end
 
-    assign q_rd = !busy && !q_empty;
+    assign req_ready = !busy;
 
     always_ff @(posedge clk) begin
         if (rst) begin
@@ -66,7 +67,7 @@ module mdp_order_tx (
         end else if (!busy) begin
             m_tvalid <= 1'b0;
             m_tlast  <= 1'b0;
-            if (!q_empty) begin
+            if (req_valid) begin
                 frame_q  <= {32'd0, f_le};
                 m_tdata  <= f_le[63:0];
                 m_tkeep  <= 8'hFF;

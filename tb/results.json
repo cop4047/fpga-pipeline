@@ -4,14 +4,14 @@
     "order_frame_beats": 8,
     "stage_cycles": {
       "asm_m_valid": 1,
-      "book_pop": 2,
-      "order_req": 8,
+      "book_accept": 1,
+      "order_req": 4,
       "parse_w_valid": -1,
-      "tob_tap": 8,
-      "tx_first_beat": 10
+      "tob_tap": 4,
+      "tx_first_beat": 5
     },
-    "tick_to_trade_cycles": 10,
-    "tick_to_trade_ns_at_156p25MHz": 64.0
+    "tick_to_trade_cycles": 5,
+    "tick_to_trade_ns_at_156p25MHz": 32.0
   },
   "random_coverage": {
     "bad_frames": 147,

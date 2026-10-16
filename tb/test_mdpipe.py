@@ -25,7 +25,7 @@ import mdp_model as M  # noqa: E402
 
 PERIOD_PS = 6400                       # 156.25 MHz
 RESULTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results.json")
-LATENCY_REGRESSION = None              # set below once measured (cycles)
+LATENCY_REGRESSION = 5                 # cycles; a deliberate RTL latency change must update this
 
 
 def _save(key, value):
@@ -297,6 +297,58 @@ async def test_directed_errors(dut):
 
 
 @cocotb.test()
+async def test_threshold_edges(dut):
+    """Trigger threshold relative to the book window: below it (never fires), at
+    level 0, at the top level, exactly one window above, far above (always)."""
+    env = Env(dut)
+    for off in (-5, -1, 0, 1, 63, 64, 65, 1000):
+        cfg = M.Cfg(base_px=2000)
+        cfg.buy_px = cfg.base_px + off
+        await env.start(cfg)
+        base = cfg.base_px
+        ref = 1
+        for lvl in (0, 1, 31, 63, 0):                     # asks at assorted levels (last = dup level)
+            for sym in (0, 3):
+                m = A(M.SIDE_S, sym, ref, base + lvl, 10)
+                ref += 1
+                await env.send_frame(M.build_mkt_frame([m], cfg), gap=4)
+            await env.send_frame(M.build_mkt_frame([D(ref - 1), D(ref - 2)], cfg), gap=4)   # re-arm
+        await env.drain()
+        env.check()
+        n = len(env.orders)
+        dut._log.info(f"buy_px = base{off:+d}: {n} orders")
+        if off < 0:
+            assert n == 0, "threshold below the window must never fire"
+        if off >= 63:
+            assert n == 10, f"threshold covering the whole window must fire on every add ({n})"
+
+
+@cocotb.test()
+async def test_order_storm(dut):
+    """Order bursts that arrive faster than the 8-beat transmitter drains them:
+    exercises the order FIFO and the bypass/enqueue hand-off.  Every order must
+    survive.  (A *sustained* rate above one order per 8 clocks is beyond the
+    transmitter's capacity by construction and is counted in cnt_ovf instead --
+    see docs/SPEC.md, limits.)"""
+    env = Env(dut)
+    await env.start()
+    cfg, base = env.cfg, env.cfg.base_px
+    rng = random.Random(5)
+    ref = 1
+    for _burst in range(25):
+        for _ in range(7):                               # 7 frames x 2 orders = 14-order burst
+            msgs = []
+            for _ in range(2):                           # add-low-ask + delete, per symbol
+                sym = rng.randrange(4)
+                msgs += [A(M.SIDE_S, sym, ref, base + rng.randint(0, 20), 5), D(ref)]
+                ref = ref % 1000 + 1
+            await env.send_frame(M.build_mkt_frame(msgs, cfg), gap=rng.choice((0, 0, 1, 2)))
+        await env.drain(extra=20)
+    env.check()
+    assert len(env.orders) >= 300, f"storm produced only {len(env.orders)} orders"
+
+
+@cocotb.test()
 async def test_back_to_back_min_frames(dut):
     """Single-message frames with zero inter-frame gap (worst sustained rate for
     this workload) -- the book must keep up with no overflow."""
@@ -365,7 +417,7 @@ async def test_latency(dut):
     probes = {
         "parse_w_valid": dut.u_parse.w_valid,
         "asm_m_valid": dut.u_asm.m_valid,
-        "book_pop": dut.u_book.f_rd,
+        "book_accept": dut.u_book.accept,
         "tob_tap": dut.tap_tob_valid,
         "order_req": dut.u_book.ord_valid,
         "tx_first_beat": dut.m_tvalid,
@@ -382,7 +434,7 @@ async def test_latency(dut):
     cyc = lambda t: round((t - t_last) / PERIOD_PS) - 1     # launch edge relative to capture edge
     stages = {k: cyc(v) for k, v in env.probe_first.items()}
     lat = cyc(env.order_first_t[0])
-    dut._log.info(f"tick-to-trade (v1, simulated) = {lat} cycles = {lat * 6.4:.1f} ns @156.25 MHz")
+    dut._log.info(f"tick-to-trade (simulated) = {lat} cycles = {lat * 6.4:.1f} ns @156.25 MHz")
     dut._log.info(f"stage first-seen (cycles after last input beat captured): {stages}")
     _save("latency", {"tick_to_trade_cycles": lat, "tick_to_trade_ns_at_156p25MHz": round(lat * 6.4, 1),
                       "stage_cycles": stages, "frame_beats": len(M.frame_to_beats(M.build_mkt_frame([m], cfg))),
@@ -392,18 +444,37 @@ async def test_latency(dut):
 
 
 @cocotb.test()
+async def test_mtu_frame(dut):
+    """A maximum-size (MTU) frame: 91 messages arrive at one message per 2 clocks,
+    faster than the book retires them, so the message FIFO must absorb the burst."""
+    env = Env(dut)
+    await env.start()
+    cfg, base = env.cfg, env.cfg.base_px
+    rng = random.Random(11)
+    msgs = [A(rng.choice((M.SIDE_B, M.SIDE_S)), rng.randrange(4), r, base + rng.randint(0, 45),
+              rng.randint(1, 900)) for r in range(1, 92)]
+    f = M.build_mkt_frame(msgs, cfg)
+    assert len(f) == 44 + 91 * 16 and len(f) <= 1500
+    await env.send_frame(f, gap=0)
+    await env.drain()
+    env.check()
+    assert len(env.tobs) == 91
+    dut._log.info(f"MTU frame: peak message-FIFO depth stayed below {2 ** len(dut.dbg_msgq_count) // 2}")
+
+
+@cocotb.test()
 async def test_overload_is_counted(dut):
-    """No back-pressure exists, so under overload the design must DROP and COUNT,
-    never corrupt or hang: overflow counter rises and the design recovers."""
+    """No back-pressure exists, so under sustained overload the design must DROP and
+    COUNT, never corrupt or hang: the overflow counter rises and the design recovers."""
     env = Env(dut)
     await env.start()
     cfg, base = env.cfg, env.cfg.base_px
     ref = 1
-    for _ in range(80):                                   # 4-message frames, zero gap
+    for _ in range(12):                                   # MTU-size frames, zero gap
         msgs = []
-        for _ in range(4):
+        for _ in range(91):
             msgs.append(A(M.SIDE_B, 0, ref, base + 3, 1))
-            ref += 1
+            ref = ref % 1000 + 1
         await env.send_frame(M.build_mkt_frame(msgs, cfg), gap=0, flow_ctl=False, feed_model=False)
     await env.drain()
     assert int(dut.cnt_ovf.value) > 0, "overload was not detected"
