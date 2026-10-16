@@ -455,11 +455,22 @@ async def test_mtu_frame(dut):
               rng.randint(1, 900)) for r in range(1, 92)]
     f = M.build_mkt_frame(msgs, cfg)
     assert len(f) == 44 + 91 * 16 and len(f) <= 1500
+    peak = [0]
+
+    async def watch():
+        while True:
+            await RisingEdge(dut.clk)
+            peak[0] = max(peak[0], int(dut.dbg_msgq_count.value))
+    w = cocotb.start_soon(watch())
     await env.send_frame(f, gap=0)
     await env.drain()
+    w.cancel()
     env.check()
     assert len(env.tobs) == 91
-    dut._log.info(f"MTU frame: peak message-FIFO depth stayed below {2 ** len(dut.dbg_msgq_count) // 2}")
+    depth = 2 ** (len(dut.dbg_msgq_count) - 1)
+    dut._log.info(f"MTU frame (91 msgs): peak message-FIFO occupancy {peak[0]} of {depth}")
+    assert peak[0] < depth
+    _save("mtu_frame", {"messages": 91, "peak_msgq_occupancy": peak[0], "msgq_depth": depth})
 
 
 @cocotb.test()
