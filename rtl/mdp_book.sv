@@ -178,8 +178,10 @@ module mdp_book #(
     end
 
     // -------------------------------------------- TBL / LVL combinational logic
-    wire [31:0] exe_delta = (m_del || (m_shs >= oq_rem)) ? oq_rem : m_shs;
-    wire [31:0] new_rem   = oq_rem - exe_delta;
+    wire [32:0] rem_diff  = {1'b0, oq_rem} - {1'b0, m_shs};   // bit 32 = borrow: m_shs > oq_rem
+    wire        exe_all   = m_del || rem_diff[32];            // this message consumes the whole order
+    wire [31:0] exe_delta = exe_all ? oq_rem : m_shs;
+    wire [31:0] new_rem   = exe_all ? 32'd0 : rem_diff[31:0];
     wire [31:0] add_qty   = lvl_rd + m_shs;
     wire [31:0] sub_qty   = lvl_rd - w_delta;
 

@@ -1,0 +1,10 @@
+-------------------------------------
+| Tool Version : Vivado v.2026.1
+| Date         : Fri Oct 16 21:02:03 2026
+| Host         : A-Laptop
+| Design       : checkpoint_mdp_top_synth
+| Device       : xc7k70t-fbg676-2--
+-------------------------------------
+
+For more information on clockInfo.txt clock routing debug file see https://support.xilinx.com/s/article/000035660?language=en_US
+

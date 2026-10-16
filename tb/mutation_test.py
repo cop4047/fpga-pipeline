@@ -30,7 +30,7 @@ MUTANTS = [
     ("mdp_book.sv", "if (oq_valid) begin\n                            drop_valid  <= 1'b1;\n                            drop_reason <= R_DUP_REF;",
      "if (1'b0) begin\n                            drop_valid  <= 1'b1;\n                            drop_reason <= R_DUP_REF;",
      "duplicate order ref not detected"),
-    ("mdp_book.sv", "(m_del || (m_shs >= oq_rem)) ? oq_rem : m_shs", "(m_del) ? oq_rem : m_shs",
+    ("mdp_book.sv", "m_del || rem_diff[32]", "m_del",
      "execute not clamped to remaining shares"),
     ("mdp_book.sv", "lvl_wdata = add_qty;", "lvl_wdata = lvl_rd;",
      "Add does not update level quantity"),
