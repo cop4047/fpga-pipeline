@@ -1,4 +1,5 @@
-# cocotb testbench for mdp_top (Icarus Verilog by default; SIM=verilator also works)
+# cocotb testbench for mdp_top (Icarus Verilog; Verilator is used for lint only --
+# cocotb 2.x needs Verilator >= 5.036 as a simulator)
 #   make            run all tests
 #   make WAVES=1    also dump a waveform (sim_build/*.fst / *.vcd)
 #   make MDP_SEEDS=1,2,3,4,5,6,7,8 MDP_FRAMES=3000   longer random run
@@ -14,9 +15,6 @@ VERILOG_SOURCES = $(RTL_DIR)/mdp_fifo.sv $(RTL_DIR)/mdp_hdr_parse.sv \
 
 ifeq ($(SIM),icarus)
 COMPILE_ARGS += -g2012
-endif
-ifeq ($(SIM),verilator)
-EXTRA_ARGS += --trace --trace-structs -Wno-fatal
 endif
 
 export PYTHONPATH := $(CURDIR)/../model:$(PYTHONPATH)
