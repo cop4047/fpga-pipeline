@@ -1,0 +1,37 @@
+{
+  "latency": {
+    "frame_beats": 8,
+    "order_frame_beats": 8,
+    "stage_cycles": {
+      "asm_m_valid": 1,
+      "book_pop": 2,
+      "order_req": 8,
+      "parse_w_valid": -1,
+      "tob_tap": 8,
+      "tx_first_beat": 10
+    },
+    "tick_to_trade_cycles": 10,
+    "tick_to_trade_ns_at_156p25MHz": 64.0
+  },
+  "random_coverage": {
+    "bad_frames": 147,
+    "frames": 4800,
+    "msgs": 11593,
+    "orders": 108,
+    "reasons": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "syms_fired": [
+      0,
+      1,
+      2,
+      3
+    ]
+  }
+}
