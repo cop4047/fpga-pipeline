@@ -1,0 +1,5 @@
+# Open-source sanity synthesis of the ITCH 5.0 design (resource ESTIMATE only -- not a
+# substitute for Vivado).      yosys -s syn/yosys_itch.ys   (or: yowasp-yosys -s syn/yosys_itch.ys)
+read_verilog -sv rtl/mdp_fifo.sv rtl/mdp_itch_unit.sv rtl/mdp_itch_frame.sv rtl/mdp_itch_book.sv rtl/mdp_order_tx.sv rtl/mdp_itch_top.sv
+synth_xilinx -top mdp_itch_top -family xc7 -noiopad
+tee -o syn/out_itch/yosys_stat.txt stat

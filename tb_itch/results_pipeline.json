@@ -1,0 +1,32 @@
+{
+  "latency": {
+    "best_cycles": 7,
+    "best_ns_at_156p25MHz": 44.8,
+    "cycles_by_start_lane": {
+      "0": 8,
+      "1": 8,
+      "2": 8,
+      "3": 7,
+      "4": 7,
+      "5": 7,
+      "6": 8,
+      "7": 8
+    },
+    "stages_best": {
+      "book_accept": 0,
+      "frame_m_valid": 0,
+      "order_req": 6,
+      "tob_tap": 6,
+      "tx_first_beat": 14
+    },
+    "stages_worst": {
+      "book_accept": 1,
+      "frame_m_valid": 1,
+      "order_req": 7,
+      "tob_tap": 7,
+      "tx_first_beat": 15
+    },
+    "worst_cycles": 8,
+    "worst_ns_at_156p25MHz": 51.2
+  }
+}

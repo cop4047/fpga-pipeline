@@ -3,15 +3,18 @@
 #
 #   vivado -mode batch -source syn/sweep.tcl -tclargs <part> "6.4 5.0 4.0 3.3"
 #
-# Run syn/build.tcl first (it writes syn/out/mdp_top_synth.dcp).  Untested --
-# written without access to Vivado.  Results: syn/out/sweep.csv
+# Run syn/build.tcl first (it writes <outdir>/<top>_synth.dcp).  Same TOP convention as
+# build.tcl: default mdp_itch_top (results in syn/out_itch/sweep.csv); `set TOP mdp_top`
+# first for the older design (syn/out/sweep.csv).
 
 set part    [expr {[info exists argv] && [llength $argv] > 0 ? [lindex $argv 0] : "xc7k70tfbg676-2"}]
-set periods [expr {[info exists argv] && [llength $argv] > 1 ? [lindex $argv 1] : "6.4 5.0 4.0 3.3"}]
+set periods [expr {[info exists argv] && [llength $argv] > 1 ? [lindex $argv 1] : "6.4 5.5 5.0 4.5 4.0"}]
 
+if {![info exists TOP]} { set TOP mdp_itch_top }
+set outname [expr {$TOP eq "mdp_top" ? "out" : "out_itch"}]
 set root [file normalize [file join [file dirname [info script]] ..]]
-set out  [file join $root syn out]
-set dcp  [file join $out mdp_top_synth.dcp]
+set out  [file join $root syn $outname]
+set dcp  [file join $out ${TOP}_synth.dcp]
 
 set csv [open [file join $out sweep.csv] w]
 puts $csv "part,period_ns,fmax_target_mhz,wns_ns,tns_ns,met"

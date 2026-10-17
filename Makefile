@@ -5,11 +5,17 @@
 #   make yosys      open-source synthesis (resource ESTIMATE, not Vivado) ~25 s
 #   make vivado     OOC synth+impl, reports in syn/out   (needs Vivado on PATH)
 #   make sweep      Fmax sweep                           (needs Vivado, after make vivado)
+#   make itch-sim       ITCH 5.0 framer cocotb regression (Icarus)      ~30 s
+#   make itch-pipe      full ITCH 5.0 pipeline cocotb regression         ~40 s
+#   make itch-lint      Verilator -Wall lint of the whole ITCH design
+#   make itch-mutation  inject bugs into the framer, check the TB catches them  ~3 min
+#   make itch-book-mutation  same for the book (50 bugs, whole-pipeline tests)  ~12 min
+#   make itch-yosys     open-source resource ESTIMATE of the ITCH design
 #   make clean
 PART   ?= xc7k70tfbg676-2
 PERIOD ?= 6.4
 
-.PHONY: sim lint mutation yosys vivado sweep clean
+.PHONY: sim lint mutation yosys vivado sweep clean itch-sim itch-pipe itch-lint itch-mutation itch-book-mutation itch-yosys
 
 sim:
 	$(MAKE) -C tb
@@ -19,6 +25,25 @@ lint:
 
 mutation:
 	python3 tb/mutation_test.py
+
+itch-sim:
+	$(MAKE) -C tb_itch
+
+itch-pipe:
+	$(MAKE) -C tb_itch TOP=pipeline
+
+itch-lint:
+	verilator --lint-only -Wall --top-module mdp_itch_top rtl/mdp_fifo.sv rtl/mdp_itch_unit.sv rtl/mdp_itch_frame.sv rtl/mdp_itch_book.sv rtl/mdp_order_tx.sv rtl/mdp_itch_top.sv
+
+itch-mutation:
+	python3 tb_itch/mutation_test.py
+
+itch-book-mutation:
+	python3 tb_itch/mutation_test.py --suite book
+
+itch-yosys:
+	mkdir -p syn/out_itch
+	yosys -s syn/yosys_itch.ys || yowasp-yosys -s syn/yosys_itch.ys
 
 yosys:
 	mkdir -p syn/out
@@ -31,4 +56,4 @@ sweep:
 	vivado -mode batch -source syn/sweep.tcl -tclargs $(PART) "6.4 5.0 4.0 3.3"
 
 clean:
-	rm -rf tb/sim_build tb/results.xml tb/__pycache__ model/__pycache__ syn/out
+	rm -rf tb/sim_build tb/results.xml tb/__pycache__ model/__pycache__ syn/out tb_itch/sim_build* tb_itch/results.xml tb_itch/results_pipeline.json tb_itch/__pycache__
