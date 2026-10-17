@@ -1,4 +1,4 @@
-# mdpipe — a 10G market-data → order FPGA pipeline (SystemVerilog + cocotb)
+# a 10G market-data → order FPGA pipeline (SystemVerilog + cocotb)
 
 Parse a UDP market-data frame, keep a price-level order book in hardware, fire
 an order on a trigger, and emit the order frame — between two 64-bit
@@ -20,18 +20,52 @@ Full detail: **[docs/SPEC.md](docs/SPEC.md)** · interview prep:
 
 | | |
 |---|---|
-| Tick-to-trade (simulated, idle pipeline) | **5 cycles = 32 ns @ 156.25 MHz** (v1: 10 cycles / 64 ns — tags `v1`, `v2`) |
+| Tick-to-trade (simulated, idle pipeline) | **5 cycles = 32 ns @ 156.25 MHz, or 25 ns @ 200 MHz** (v1: 10 cycles / 64 ns — tags `v1`, `v2`). The cycle count is from RTL simulation; the 200 MHz figure applies that count to the clock Vivado closed timing at. |
 | Book throughput | 3 cycles/msg (Add), 4 (Delete/Execute) ≈ 52 / 39 M msg/s |
 | Regression | 10 cocotb tests, ≈ 11.6 k random messages bit-exact vs Python model |
 | Mutation testing | 14 injected RTL bugs, 14 caught (`docs/mutation_report.txt`) |
 | Lint | Verilator `-Wall` clean |
-| yosys xc7 estimate | ≈ 2170 LUT, ≈ 1690 FF, 4 BRAM18 + LUTRAM (*estimate*) |
-| **Vivado timing / Fmax** | **not measured yet — see "Your turn" below** |
+| yosys xc7 estimate | ≈ 2170 LUT, ≈ 1690 FF, 4 BRAM18 + LUTRAM (*estimate only; Vivado differs, see below*) |
+| **Vivado timing (post-route)** | **Closes at 156.25 MHz (WNS +0.496 ns) and 200 MHz (+0.088 ns). Does not close at 250 MHz (−1.036 ns) or 303 MHz (−1.429 ns).** Achieved Fmax ≈ 200 MHz. |
+| Vivado utilisation | 5,820 LUTs (2,756 logic + 3,064 LUTRAM, 14.2 %), 1,798 FF, 0 BRAM, 0 DSP. Vivado used distributed RAM where yosys predicted 4 BRAM18. |
 | Hardware | not yet |
+
+Vivado 2026.1, part `xc7k70tfbg676-2`, **out-of-context** (no MAC, no I/O
+constraints), `syn/build.tcl` then `syn/sweep.tcl`. Slack varies by about ±0.3 ns
+between runs of the same design, so small differences on the failing targets are
+noise; the pass/fail pattern is stable.
 
 Latency is *core logic between the AXI-Streams* in simulation. It excludes
 MAC/PCS/PHY and is not a hardware measurement. The protocol is **"ITCH-lite"**
 (fixed 16-byte Add/Delete/Execute), not Nasdaq ITCH 5.0.
+
+### Timing-closure log
+
+Each row is one iteration of the same sweep (WNS in ns, post-route):
+
+| Iteration | 156.25 MHz | 200 MHz | 250 MHz | 303 MHz |
+|---|---|---|---|---|
+| Baseline | +0.592 | +0.059 | −0.702 | −1.504 |
+| Order payload registers load every `BT` cycle (only `ord_valid` gated) | +0.607 | +0.021 | −0.759 | −1.745 |
+| Execute clamp as one subtract + borrow bit (was compare → mux → subtract) | +0.496 | +0.088 | −1.036 | −1.429 |
+
+What this showed:
+
+- Neither change moved Fmax. The first removed a trigger-logic cone from a
+  40-wide clock-enable; no measurable gain. The second removed a serial
+  compare→subtract (the 4.0 ns worst path had been the execute update into the
+  order table); the worst path simply moved elsewhere.
+- My early hypothesis was that the priority encode or the async-read RAMs limited
+  Fmax. The reports did not support that. At 4.0 ns the worst path is now input
+  decode: message-FIFO read pointer (fan-out 137) → LUTRAM read → bypass mux →
+  32-bit `i_px_ok` compare → drop-reason logic → `book/state` (13 logic levels,
+  4.94 ns, about 80 % routing delay).
+- Several paths sit at roughly 4.5–5 ns, so fixing one only exposes the next.
+  Candidates for 250 MHz: compute the price-window check in `mdp_msg_asm` and
+  carry it with the message (no added latency), or add an input register stage
+  (+1 cycle). Not done; 200 MHz is the honest claim.
+- Raising the clock mostly buys throughput. Single-order latency improves only
+  from fewer cycles or a faster clock on the same 5 cycles (32 ns → 25 ns).
 
 ## Quick start
 
@@ -46,6 +80,18 @@ make vivado PART=xc7k70tfbg676-2 PERIOD=6.4
 make sweep
 ```
 
+From the Vivado Tcl console (run `build.tcl` first: the sweep reopens its
+`mdp_top_synth.dcp`, and a stale checkpoint gives stale numbers):
+
+```tcl
+cd C:/path/to/fpga-pipeline/syn
+source build.tcl
+source sweep.tcl      ;# 6.4 / 5.0 / 4.0 / 3.3 ns, writes out/sweep.csv and out/worst_paths_<period>ns.rpt
+```
+
+The free Vivado BASIC licence covers `xc7k70tfbg676-2`. If `get_parts` returns
+nothing, check that the selected licence is not the Alveo one.
+
 Windows: run the simulation in WSL2 (Icarus + cocotb are painless there) and keep
 Vivado native for synthesis; the Vivado Tcl scripts are plain batch Tcl.
 
@@ -59,18 +105,15 @@ syn/    build.tcl  sweep.tcl  yosys.ys  board_template.xdc
 docs/   SPEC.md  INTERVIEW.md  mutation_report.txt
 ```
 
-## Your turn (what I could not do for you)
+## Next steps
 
-1. **Run Vivado.** `make vivado` and `make sweep`, then fill the table in
-   `docs/SPEC.md` §7.2 and the line above. The Tcl was written without a Vivado
-   to test against — expect to fix small version-specific things. Pick a part
-   your free Vivado edition supports (an unsupported part errors at synthesis,
-   not in the part chooser). Record at least one timing-closure iteration
-   ("WNS −x → +y after Z"); that is the thing interviewers dig into.
+1. **Vivado: done to 200 MHz.** The sweep and the iteration log are above. Keep
+   `docs/SPEC.md` §7.2 and `docs/INTERVIEW.md` question 7 in step with them
+   (question 7 still describes the original hypothesis).
 2. **Own every line.** Read the RTL against `docs/INTERVIEW.md` until you can
    redraw each block and explain each trade-off without the files. Interviewers
    will ask you to modify the design on a whiteboard.
-3. **Then the board (Phase 5).** Only after Vivado closes timing: integrate a
+3. **Then the board (Phase 5).** Integrate a
    10G MAC (Forencich `verilog-ethernet`), cross clocks with your Gray-coded
    FIFO from the PTP project, and pick a board with real SFP+ and 10G-capable
    transceivers (Artix-7 GTP transceivers cannot do 10G). Check the part is in
@@ -89,18 +132,22 @@ Say *simulated* until you have hardware numbers, and don't claim real ITCH.
 > payload realignment, ITCH-style message decode, a hardware price-level order
 > book (order table, level RAM, occupancy bitmap + priority encode) and an
 > edge-armed price trigger generating the order frame. Iterated tick-to-trade
-> from 10 to 5 clock cycles (32 ns @ 156.25 MHz, RTL simulation) by removing
-> idle-path queueing and merging pipeline stages.
+> from 10 to 5 clock cycles (32 ns @ 156.25 MHz, 25 ns @ 200 MHz; RTL
+> simulation) by removing idle-path queueing and merging pipeline stages.
 >
 > Verified against a Python golden model with constrained-random traffic,
-> functional coverage and mutation testing (14/14 injected bugs caught); closed
-> timing at *[X MHz]* on *[part]* in Vivado *(fill in once measured)*.
+> functional coverage and mutation testing (14/14 injected bugs caught). Closed
+> timing at 200 MHz post-route (out-of-context, Vivado 2026.1, Kintex-7
+> xc7k70tfbg676-2) and traced the 250 MHz limit to input-decode logic through
+> three sweep iterations.
 
-If you finish only the Vivado step, the last clause becomes true; until then,
-delete it.
+Do not claim 250 MHz, a hardware latency, or real ITCH. "Simulated" stays on
+every latency number until there is a board.
 
 ## Honest limitations
 
 Fixed 64-tick price window, direct-mapped 1024-entry order table, one message in
 flight in the book, no matching or risk logic, no back-pressure (overflow is
-counted, not prevented). All listed in `docs/SPEC.md` §5.4 and §10.
+counted, not prevented). Timing is out-of-context only: no MAC, no I/O timing,
+no board. Fmax is about 200 MHz, not the 250 MHz that would suit a 128-bit/25G
+datapath. All listed in `docs/SPEC.md` §5.4 and §10.
