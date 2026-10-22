@@ -20,7 +20,9 @@
 // the next one.  The 2-byte length is read straight from the beat with an 8:1 byte
 // mux; at most one block starts per beat because blocks are >= 14 bytes with
 // their prefix.  Two mdp_itch_unit instances alternate between blocks.
-module mdp_itch_frame (
+module mdp_itch_frame #(
+    parameter int TS_W = 40
+) (
     input  logic         clk,
     input  logic         rst,
     input  logic [15:0]  cfg_dport,
@@ -30,9 +32,12 @@ module mdp_itch_frame (
     input  logic [7:0]   s_tkeep,       // contiguous from lane 0 (0xFF except on tlast)
     input  logic         s_tvalid,
     input  logic         s_tlast,
+    // hardware time (mdp_ptp_rtc); a message is stamped in the cycle its last byte is presented
+    input  logic [TS_W-1:0] ts_now,
     // extracted messages
     output logic         m_valid,
     output logic [15:0]  m_len,
+    output logic [TS_W-1:0] m_ts,
     output logic [319:0] m_data,
     // one-cycle event pulses
     output logic         ev_good,
@@ -135,24 +140,26 @@ module mdp_itch_frame (
     wire         tick = s_tvalid | flush_q;
     logic        d0_msg, d0_dup, d1_msg, d1_dup;
     logic [15:0] l0, l1;
+    logic [TS_W-1:0] ts0, ts1;
     logic [319:0] msg0, msg1;
     logic [16:0] skip_q;
 
-    mdp_itch_unit u0 (
+    mdp_itch_unit #(.TS_W(TS_W)) u0 (
         .clk(clk), .rst(rst), .tick(tick), .prv(prv), .cur(s_tdata),
         .load(learn_ok && !kcnt_q[0]), .ld_r(bl), .ld_skip1(sk), .ld_len(len_n), .ld_blk(kcnt_q),
-        .end_ev(end_ev && !endu_q), .clear(flush_q), .skip(skip_q),
-        .done_msg(d0_msg), .done_dup(d0_dup), .o_len(l0), .msg(msg0)
+        .end_ev(end_ev && !endu_q), .ts_in(ts_now), .clear(flush_q), .skip(skip_q),
+        .done_msg(d0_msg), .done_dup(d0_dup), .o_len(l0), .o_ts(ts0), .msg(msg0)
     );
-    mdp_itch_unit u1 (
+    mdp_itch_unit #(.TS_W(TS_W)) u1 (
         .clk(clk), .rst(rst), .tick(tick), .prv(prv), .cur(s_tdata),
         .load(learn_ok && kcnt_q[0]), .ld_r(bl), .ld_skip1(sk), .ld_len(len_n), .ld_blk(kcnt_q),
-        .end_ev(end_ev && endu_q), .clear(flush_q), .skip(skip_q),
-        .done_msg(d1_msg), .done_dup(d1_dup), .o_len(l1), .msg(msg1)
+        .end_ev(end_ev && endu_q), .ts_in(ts_now), .clear(flush_q), .skip(skip_q),
+        .done_msg(d1_msg), .done_dup(d1_dup), .o_len(l1), .o_ts(ts1), .msg(msg1)
     );
 
     assign m_valid = d0_msg | d1_msg;
     assign m_len   = d1_msg ? l1 : l0;
+    assign m_ts    = d1_msg ? ts1 : ts0;
     assign m_data  = d1_msg ? msg1 : msg0;
 
     // ------------------------------------------------------------ sequence tracking

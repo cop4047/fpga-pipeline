@@ -5,6 +5,9 @@ frame stream the testbench checks, in order:
   * each message handed over on m_* (length, and the first min(len, 40) bytes)
   * the packet counters: good/bad frames, heartbeats, end-of-session, gaps,
     duplicate messages, truncations, and the number of messages
+  * the hardware timestamp that accompanies each message: it must equal the clock value in the
+    cycle in which the beat holding the message's last byte was presented (the testbench drives
+    `ts_now` with a free-running cycle count, so the expected value is known exactly)
 Frames are driven with random idle cycles between beats and between frames, and
 back to back, with partial tkeep on the last beat.
 """
@@ -20,6 +23,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import itch50 as I  # noqa: E402
 
 PERIOD_PS = 6400
+TS_W = 40
+TS_MASK = (1 << TS_W) - 1
+
+
+def now_ps():
+    return int(round(cocotb.utils.get_sim_time("ps")))
 MAXB = 40
 
 
@@ -31,12 +40,25 @@ class Env:
         self.ev = dict.fromkeys(("good", "bad", "hb", "eos", "gap", "trunc", "dup"), 0)
         self._clk = False
         self._mon = None
+        self._ts_task = None
+        self.t0 = 0
+        self.tss = []                        # m_ts as seen on m_*
+        self.beat_ts = []                    # per frame: ts_now value in the cycle each beat was presented
+
+    async def _ts_counter(self):
+        """ts_now = number of cycles since t0, a pure function of simulation time."""
+        d = self.dut
+        while True:
+            await RisingEdge(d.clk)
+            d.ts_now.value = ((now_ps() - self.t0) // PERIOD_PS) & TS_MASK
 
     async def start(self, cfg=None):
         d = self.dut
         if cfg is not None:
             self.cfg = cfg
         self.msgs.clear()
+        self.tss.clear()
+        self.beat_ts.clear()
         for k in self.ev:
             self.ev[k] = 0
         if self._mon is not None:
@@ -55,6 +77,11 @@ class Env:
             await RisingEdge(d.clk)
         d.rst.value = 0
         await RisingEdge(d.clk)
+        if self._ts_task is not None:
+            self._ts_task.cancel()
+        self.t0 = now_ps()
+        d.ts_now.value = 0
+        self._ts_task = cocotb.start_soon(self._ts_counter())
         self._mon = cocotb.start_soon(self._monitor())
 
     async def _monitor(self):
@@ -65,6 +92,7 @@ class Env:
                 ln = int(d.m_len.value)
                 data = int(d.m_data.value).to_bytes(40, "big")
                 self.msgs.append((ln, data[:min(ln, MAXB)]))
+                self.tss.append(int(d.m_ts.value))
             for k in self.ev:
                 if int(getattr(d, "ev_" + k).value):
                     self.ev[k] += 1
@@ -72,16 +100,19 @@ class Env:
     async def send_frame(self, f, rng, gap_choices=(0, 0, 0, 1, 3), idle_in_frame=0.0):
         d = self.dut
         beats = [f[i:i + 8] for i in range(0, len(f), 8)]
+        bts = []
         for i, b in enumerate(beats):
             while idle_in_frame and rng.random() < idle_in_frame:
                 d.s_tvalid.value = 0
                 await RisingEdge(d.clk)
             n = len(b)
+            bts.append(((now_ps() - self.t0) // PERIOD_PS) & TS_MASK)
             d.s_tdata.value = int.from_bytes(b + bytes(8 - n), "little")
             d.s_tkeep.value = (1 << n) - 1
             d.s_tvalid.value = 1
             d.s_tlast.value = int(i == len(beats) - 1)
             await RisingEdge(d.clk)
+        self.beat_ts.append(bts)
         d.s_tvalid.value = 0
         d.s_tlast.value = 0
         for _ in range(rng.choice(gap_choices)):
@@ -112,6 +143,13 @@ class Env:
                     gap=st["gaps"], trunc=st["trunc"], dup=st["dups"])
         assert self.ev == want, f"counters rtl={self.ev} model={want}"
         assert len(self.msgs) == st["msgs"]
+        # hardware timestamps: the cycle in which the beat with the message's last byte was presented
+        assert len(self.beat_ts) == m.nframes, "testbench sent a different number of frames than the model saw"
+        assert len(self.tss) == len(m.emit_pos)
+        for i, ((fno, off), got) in enumerate(zip(m.emit_pos, self.tss)):
+            exp = self.beat_ts[fno][off // 8]
+            assert got == exp, (f"message #{i} (frame {fno}, last byte at offset {off}, beat {off // 8}): "
+                                f"timestamp {got}, expected {exp}")
 
 
 def pad(f):

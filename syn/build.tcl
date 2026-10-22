@@ -4,6 +4,9 @@
 #       cd C:/Users/alros/Documents/FPGA-Project/fpga-pipeline/syn
 #       source build.tcl                 ;# ITCH 5.0 design (mdp_itch_top), results in syn/out_itch
 #       set TOP mdp_top; source build.tcl  ;# the older ITCH-lite design, results in syn/out
+#       set ASYNC_CORE 1; source build.tcl ;# two-clock build: book on clk_core, Gray-coded async FIFOs,
+#                                          ;# results in syn/out_itch_async (see syn/cdc.xdc; UNTESTED in Vivado)
+#       set CORE_PERIOD 4.0                ;# core clock period for the two-clock build (default 4.0 ns)
 #   Batch:
 #       vivado -mode batch -source syn/build.tcl -tclargs <part> <clk_period_ns>
 #   e.g.   vivado -mode batch -source syn/build.tcl -tclargs xc7k70tfbg676-2 6.4
@@ -21,12 +24,15 @@ set period [expr {[info exists argv] && [llength $argv] > 1 ? [lindex $argv 1] :
 
 # which design: set TOP before sourcing (default mdp_itch_top)
 if {![info exists TOP]} { set TOP mdp_itch_top }
+if {![info exists ASYNC_CORE]} { set ASYNC_CORE 0 }
+if {![info exists CORE_PERIOD]} { set CORE_PERIOD 4.0 }
 if {$TOP eq "mdp_top"} {
     set outname out
     set rtl [list mdp_fifo mdp_hdr_parse mdp_msg_asm mdp_book mdp_order_tx mdp_top]
 } else {
-    set outname out_itch
-    set rtl [list mdp_fifo mdp_itch_unit mdp_itch_frame mdp_itch_book mdp_order_tx mdp_itch_top]
+    set outname [expr {$ASYNC_CORE ? "out_itch_async" : "out_itch"}]
+    set rtl [list mdp_fifo mdp_sync2 mdp_async_fifo mdp_rst_sync mdp_ptp_rtc mdp_lat_stats \
+                  mdp_itch_unit mdp_itch_frame mdp_itch_book mdp_order_tx mdp_itch_top]
 }
 
 set root [file normalize [file join [file dirname [info script]] ..]]
@@ -39,10 +45,15 @@ foreach m $rtl { read_verilog -sv [file join $root rtl ${m}.sv] }
 set xdc [file join $out clk.xdc]
 set fh [open $xdc w]
 puts $fh "create_clock -name clk -period $period \[get_ports clk\]"
+if {$ASYNC_CORE} {
+    puts $fh "create_clock -name clk_core -period $CORE_PERIOD \[get_ports clk_core\]"
+}
 close $fh
 read_xdc $xdc
+if {$ASYNC_CORE} { read_xdc [file join $root syn cdc.xdc] }
 
-synth_design -top $TOP -part $part -mode out_of_context -flatten_hierarchy rebuilt
+set generics [expr {$ASYNC_CORE ? "-generic ASYNC_CORE=1" : ""}]
+synth_design -top $TOP -part $part -mode out_of_context -flatten_hierarchy rebuilt {*}$generics
 write_checkpoint -force [file join $out ${TOP}_synth.dcp]
 report_utilization -file [file join $out utilization_synth.rpt]
 

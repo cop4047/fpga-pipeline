@@ -1,11 +1,14 @@
 """cocotb testbench for mdp_itch_top (framer + ITCH 5.0 book + order transmitter).
 
-The Python model (model/itch50.py) consumes exactly the frames the RTL sees.  Four
+The Python model (model/itch50.py) consumes exactly the frames the RTL sees.  Five
 RTL observation points are scoreboarded against it:
   * top-of-book tap  -> after every message the book applies
   * drop tap         -> every rejected message with its 4-bit reason
   * order AXI-Stream -> the exact bytes of every transmitted order frame
   * statistics counters (frames, heartbeats, gaps, duplicates, messages, ignored, ...)
+  * hardware timestamps: the latency the RTL measures for every order must equal what the
+    testbench derives, from the simulator's own clock, as (launch edge of the order) minus
+    (capture edge of the last byte of the message that triggered it)
 Directed tests pin down each rule; constrained-random tests (several seeds, idle
 cycles inside and between frames, damaged headers, bad messages) hammer the
 interaction between them.
@@ -17,13 +20,25 @@ import sys
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge
+from cocotb.triggers import RisingEdge, Timer
 from cocotb.utils import get_sim_time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "model"))
 import itch50 as I  # noqa: E402
 
-PERIOD_PS = 6400                       # 156.25 MHz
+PERIOD_PS = 6400                       # 156.25 MHz network clock
+# Core clock.  ASYNC=1 builds the design with an unrelated core clock and Gray-coded async FIFOs
+# (make ASYNC=1 CORE_PERIOD_PS=4000 CORE_PHASE_PS=1370); ASYNC=0 is the single-clock design.
+ASYNC = int(os.environ.get("ASYNC", "0"))
+CORE_PERIOD_PS = int(os.environ.get("CORE_PERIOD_PS", "4000"))
+CORE_PHASE_PS = int(os.environ.get("CORE_PHASE_PS", "1370"))
+TS_W = 40
+TS_MASK = (1 << TS_W) - 1
+RTC_FRAC = 64 - TS_W                   # fractional bits dropped when a timestamp is taken
+def now_ps():
+    return int(round(get_sim_time("ps")))
+
+
 RESULTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results_pipeline.json")
 
 
@@ -44,8 +59,16 @@ class Env:
         self.model = I.Model(self.cfg)
         self.tobs, self.drops, self.orders = [], [], []
         self.order_first_t = []
+        self.lats = []                       # per-order hardware latency pulses (RTC units)
+        self.frame_beats = []                # per frame: capture-edge time (ps) of each beat
+        self.rtc = None                      # (edge time of the set, set value, increment)
+        self.t0 = None                       # RTC value to load at start (None: random)
+        self.net_ps = PERIOD_PS
+        self.core_ps = CORE_PERIOD_PS
+        self.core_phase = CORE_PHASE_PS
+        self._core_task = None
         self.probe_first, self.probes = {}, {}
-        self._mon = None
+        self._mon = []
         self._clk = False
         self._cur = bytearray()
 
@@ -65,6 +88,54 @@ class Env:
         d.cfg_sport.value = c.sport
         d.cfg_odport.value = c.o_dport
         d.cfg_ip_csum.value = c.ip_csum()
+        d.cfg_ptp_inc.value = round(self.net_ps / 1000 * 2**32)
+        d.cfg_ptp_trim.value = 0
+        d.ptp_set_en.value = 0
+        d.ptp_set_time.value = 0
+        d.stat_clear.value = 0
+
+    def rtc_time(self, t_cycle_ps):
+        """64-bit RTC value during the network-clock cycle that starts at edge time t_cycle_ps."""
+        t_set, v0, inc = self.rtc
+        n, rem = divmod(t_cycle_ps - t_set, self.net_ps)
+        assert rem == 0 and n >= 0, "time is not on a network clock edge after the RTC set"
+        return (v0 + n * inc) & ((1 << 64) - 1)
+
+    def rtc_ts(self, t_cycle_ps):
+        return (self.rtc_time(t_cycle_ps) >> RTC_FRAC) & TS_MASK
+
+    async def _core_clock(self, period_ps, phase_ps):
+        """Core clock as a plain coroutine (any period, any phase, and cancel() really stops it)."""
+        d = self.dut
+        hi = period_ps // 2
+        d.clk_core.value = 0
+        if phase_ps:
+            await Timer(phase_ps, unit="ps")
+        while True:
+            d.clk_core.value = 1
+            await Timer(hi, unit="ps")
+            d.clk_core.value = 0
+            await Timer(period_ps - hi, unit="ps")
+
+    async def set_core_clock(self, period_ps, phase_ps):
+        """(Re)start the core clock with a new period and phase (call before start(); ASYNC=1 only)."""
+        self.core_ps, self.core_phase = period_ps, phase_ps
+        if self._core_task is not None:
+            self._core_task.cancel()
+        self._core_task = cocotb.start_soon(self._core_clock(period_ps, phase_ps))
+        await self.check_core_clock()
+
+    async def check_core_clock(self):
+        """Measure the core clock: successive rising edges must be exactly one period apart
+        (catches a stale clock process still driving the pin)."""
+        d = self.dut
+        await Timer(self.core_phase + 2 * self.core_ps, unit="ps")
+        edges = []
+        for _ in range(6):
+            await RisingEdge(d.clk_core)
+            edges.append(now_ps())
+        diffs = {b - a for a, b in zip(edges, edges[1:])}
+        assert diffs == {self.core_ps}, f"core clock not {self.core_ps} ps: edge spacings {sorted(diffs)}"
 
     async def start(self, cfg=None, probes=None):
         if cfg is not None:
@@ -72,14 +143,17 @@ class Env:
         self.model = I.Model(self.cfg)
         self.tobs.clear(); self.drops.clear(); self.orders.clear()
         self.order_first_t.clear(); self.probe_first.clear()
+        self.lats.clear(); self.frame_beats.clear()
         self.probes = probes or {}
         d = self.dut
-        if self._mon is not None:
-            self._mon.cancel()
-            self._mon = None
+        for m in self._mon:
+            m.cancel()
+        self._mon = []
         if not self._clk:
             cocotb.start_soon(Clock(d.clk, PERIOD_PS, unit="ps").start())
             self._clk = True
+        if self._core_task is None:
+            self._core_task = cocotb.start_soon(self._core_clock(self.core_ps, self.core_phase))
         d.rst.value = 1
         d.s_tdata.value = 0
         d.s_tkeep.value = 0
@@ -91,26 +165,57 @@ class Env:
         d.rst.value = 0
         await RisingEdge(d.clk)
         self._cur = bytearray()
-        self._mon = cocotb.start_soon(self._monitor())
+        self._mon = [cocotb.start_soon(self._monitor_core()), cocotb.start_soon(self._monitor_net())]
         for _ in range(4000):
             await RisingEdge(d.clk)
             if int(d.o_ready.value):
                 for _ in range(20):                  # let the threshold search settle
                     await RisingEdge(d.clk)
+                await self.set_rtc()
                 return
         raise AssertionError("o_ready never asserted after reset")
 
-    async def _monitor(self):
+    async def set_rtc(self, value=None):
+        """Step the hardware clock to `value` (default: random, sometimes just below the 2^64 wrap)."""
         d = self.dut
+        if value is None:
+            value = self.t0
+        if value is None:
+            r = random.Random(now_ps())
+            value = r.getrandbits(64) if r.random() < 0.7 else (1 << 64) - r.randrange(1, 4000) * (1 << 32)
+        d.ptp_set_time.value = value
+        d.ptp_set_en.value = 1
+        await RisingEdge(d.clk)                      # the edge that samples set_en
+        t_set = now_ps()
+        d.ptp_set_en.value = 0
+        self.rtc = (t_set, value, int(d.cfg_ptp_inc.value))
+        await RisingEdge(d.clk)
+
+    async def _monitor_core(self):
+        """Core-domain observation: top-of-book / drop taps and the stage probes."""
+        d = self.dut
+        clk = d.clk_core if ASYNC else d.clk
         while True:
-            await RisingEdge(d.clk)
-            t = get_sim_time("ps")
+            await RisingEdge(clk)
+            t = now_ps()
             if int(d.tap_tob_valid.value):
                 self.tobs.append((int(d.tap_tob_sym.value), int(d.tap_tob_bid_vld.value),
                                   int(d.tap_tob_bid_px.value), int(d.tap_tob_ask_vld.value),
                                   int(d.tap_tob_ask_px.value)))
             if int(d.tap_drop_valid.value):
                 self.drops.append(int(d.tap_drop_reason.value))
+            for name, sig in self.probes.items():
+                if int(sig.value):
+                    self.probe_first[name] = t          # last time seen (the Add is a frame's last message)
+
+    async def _monitor_net(self):
+        """Network-domain observation: the order AXI-Stream and the hardware latency stream."""
+        d = self.dut
+        while True:
+            await RisingEdge(d.clk)
+            t = now_ps()
+            if int(d.lat_valid.value):
+                self.lats.append(int(d.lat_value.value))
             if int(d.m_tvalid.value):
                 data = int(d.m_tdata.value).to_bytes(8, "little")
                 keep = int(d.m_tkeep.value)
@@ -120,9 +225,6 @@ class Env:
                 if int(d.m_tlast.value):
                     self.orders.append(bytes(self._cur))
                     self._cur = bytearray()
-            for name, sig in self.probes.items():
-                if int(sig.value):
-                    self.probe_first[name] = t          # last time seen (the Add is a frame's last message)
 
     async def send_frame(self, f, rng=None, gap=0, idle_in_frame=0.0, flow_ctl=True, feed_model=True):
         """Drive one frame; returns the time (ps) of the edge that captured its last beat."""
@@ -136,6 +238,7 @@ class Env:
                 await RisingEdge(d.clk)
         beats = [f[i:i + 8] for i in range(0, len(f), 8)]
         t_last = None
+        bt = []
         for i, b in enumerate(beats):
             while idle_in_frame and rng.random() < idle_in_frame:
                 d.s_tvalid.value = 0
@@ -146,7 +249,10 @@ class Env:
             d.s_tvalid.value = 1
             d.s_tlast.value = int(i == len(beats) - 1)
             await RisingEdge(d.clk)
-            t_last = get_sim_time("ps")
+            t_last = now_ps()
+            bt.append(t_last)
+        if feed_model:
+            self.frame_beats.append(bt)
         d.s_tvalid.value = 0
         d.s_tlast.value = 0
         for _ in range(gap):
@@ -188,6 +294,31 @@ class Env:
             f" {k}: rtl={got[k]} model={want[k]}" for k in want if got[k] != want[k])
         if not allow_ovf:
             assert int(d.cnt_ovf.value) == 0, "unexpected FIFO overflow"
+            self.check_latency()
+
+    def expected_latency(self, i):
+        """What the hardware should have measured for order i, from simulator time alone."""
+        m = self.model
+        fno, off = m.emit_pos[m.order_msg[i]]
+        t_cap = self.frame_beats[fno][off // 8]            # edge that captured the beat holding the last byte
+        t_launch = self.order_first_t[i] - self.net_ps     # edge that launched beat 0 (seen one edge later)
+        # both timestamps are taken in the cycle BEFORE their edge
+        return (self.rtc_ts(t_launch - self.net_ps) - self.rtc_ts(t_cap - self.net_ps)) & TS_MASK
+
+    def check_latency(self):
+        d = self.dut
+        n = len(self.orders)
+        assert len(self.lats) == n, f"latency events: rtl={len(self.lats)} orders={n}"
+        assert int(d.lat_cnt.value) == n
+        for i, got in enumerate(self.lats):
+            exp = self.expected_latency(i)
+            assert got == exp, (f"order #{i}: hardware latency {got} (={got / 2**(TS_W - 32):.3f} ns) "
+                                f"but the simulator timeline says {exp} (={exp / 2**(TS_W - 32):.3f} ns)")
+        if n:
+            assert int(d.lat_last.value) == self.lats[-1]
+            assert int(d.lat_min.value) == min(self.lats)
+            assert int(d.lat_max.value) == max(self.lats)
+            assert int(d.lat_sum.value) == sum(self.lats)
 
 
 # --------------------------------------------------------------- shorthands
@@ -508,7 +639,7 @@ async def test_latency(dut):
     dut._log.info(f"stage last-seen for lane {min(lat, key=lat.get)} (best): {results[min(lat, key=lat.get)][1]}")
     dut._log.info(f"stage last-seen for lane {max(lat, key=lat.get)} (worst): {results[max(lat, key=lat.get)][1]}")
     best, worst = min(lat.values()), max(lat.values())
-    _save("latency", {"cycles_by_start_lane": {str(k): v for k, v in sorted(lat.items())},
+    _save("latency" if not ASYNC else "latency_async_cycles_of_net_clock", {"cycles_by_start_lane": {str(k): v for k, v in sorted(lat.items())},
                       "best_cycles": best, "worst_cycles": worst,
                       "best_ns_at_156p25MHz": round(best * 6.4, 1), "worst_ns_at_156p25MHz": round(worst * 6.4, 1),
                       "stages_best": results[min(lat, key=lat.get)][1],
@@ -543,6 +674,10 @@ async def test_burst_and_overflow(dut):
     assert len(env.tobs) == 35
     # Overload on purpose.  Shortest block = 14 bytes (1.75 beats) but the book needs 3 cycles even
     # for an ignored message, so a full-size frame of them outruns it and the 64-deep FIFO fills.
+    # (With a separate core clock the core is slowed to 125 MHz so the same thing happens across
+    # the clock-domain crossing: the async FIFO must count, not corrupt.)
+    if ASYNC:
+        await env.set_core_clock(8000, 900)
     await env.start(cfg)
     n_sent = 0
     for k in range(20):
@@ -575,3 +710,91 @@ async def test_duplicate_watch_entries(dut):
     await env.drain()
     env.check()
     assert {t[0] for t in env.tobs} == {0, 1}, "AAPL must map to symbol 0, never 2"
+
+
+@cocotb.test()
+async def test_latency_hw(dut):
+    """Tick-to-trade as measured BY THE HARDWARE (RTC timestamps -> mdp_lat_stats), idle pipeline.
+
+    env.check() already proves each reading equals the simulator timeline.  Here the numbers are
+    recorded.  Single clock: the result is a whole number of 156.25 MHz cycles (and equals what
+    test_latency counts).  Two clocks: it is real time, and includes both FIFO crossings."""
+    env = Env(dut)
+    cfg = env.cfg
+    ns = lambda v: v / 2 ** (TS_W - 32)
+    res = {}
+    for padlen in range(12, 20):                      # the Add's start lane takes all 8 values
+        await env.start(cfg)
+        for _ in range(10):
+            await RisingEdge(dut.clk)
+        pre = I.pack_other(ord("S"), padlen)
+        m = add(1, I.SIDE_S, 25, 0, 10, cfg)          # ask <= threshold => fires
+        await env.send_frame(I.build_frame([pre, m], cfg, 1), gap=0)
+        await env.drain()
+        env.check()
+        assert len(env.lats) == 1 and len(env.orders) == 1
+        res[(62 + 2 + padlen) % 8] = ns(env.lats[0])
+        assert int(dut.lat_cnt.value) == 1 and int(dut.lat_last.value) == env.lats[0]
+    if not ASYNC:
+        for lane, v in res.items():
+            cyc = v / (PERIOD_PS / 1000)
+            assert abs(cyc - round(cyc)) < 0.005, f"lane {lane}: {v} ns is not a whole number of cycles"
+    best, worst = min(res.values()), max(res.values())
+    dut._log.info(f"hardware-measured tick-to-trade ({'two clocks' if ASYNC else 'one clock'}), "
+                  f"by start lane: { {k: round(v, 2) for k, v in sorted(res.items())} } ns")
+    key = "latency_hw" if not ASYNC else f"latency_hw_async_core{CORE_PERIOD_PS}ps"
+    _save(key, {"ns_by_start_lane": {str(k): round(v, 3) for k, v in sorted(res.items())},
+                "best_ns": round(best, 3), "worst_ns": round(worst, 3)})
+
+
+@cocotb.test()
+async def test_cdc_clock_sweep(dut):
+    """Two clocks only: random traffic through the whole pipeline for core clocks faster, slower
+    and (almost) equal to the network clock, with different phases.  Full scoreboards plus the
+    hardware latency check on every order; records the latency distribution per clock pair."""
+    if not ASYNC:
+        dut._log.info("single-clock build: nothing to sweep (run with ASYNC=1)")
+        return
+    env = Env(dut)
+    combos = [(4000, 1370), (4000, 0), (5000, 2900), (6400, 0), (6400, 3200), (6401, 1111),
+              (7000, 500), (9000, 4321), (3333, 777)]
+    out = {}
+    for core_ps, ph in combos:
+        await env.set_core_clock(core_ps, ph)
+        cfg = I.Cfg()
+        await env.start(cfg)
+        rng = random.Random(core_ps + ph)
+        frames = I.gen_traffic(random.Random(core_ps * 7 + ph), cfg, 300)
+        for f in frames:
+            await env.send_frame(f, rng, idle_in_frame=0.03, gap=rng.choice((0, 0, 1, 3, 10)))
+        await env.drain()
+        env.check()
+        v = [x / 2 ** (TS_W - 32) for x in env.lats]
+        assert v, "no orders in the sweep traffic"
+        out[f"{core_ps}ps+{ph}"] = {"orders": len(v), "min_ns": round(min(v), 2),
+                                    "mean_ns": round(sum(v) / len(v), 2), "max_ns": round(max(v), 2)}
+        dut._log.info(f"core {1e6 / core_ps:7.1f} MHz phase {ph:5d} ps: {len(v)} orders, "
+                      f"latency min/mean/max {min(v):.1f}/{sum(v) / len(v):.1f}/{max(v):.1f} ns, "
+                      f"{len(env.tobs)} book updates, {len(env.drops)} drops")
+    _save("cdc_sweep", out)
+
+
+@cocotb.test()
+async def test_cdc_model_exercised(dut):
+    """Two clocks only: the CDC-aware synchroniser model must really have been hit, otherwise
+    'passes with metastability modelling' means nothing."""
+    if not ASYNC:
+        return
+    env = Env(dut)
+    await env.start()
+    rng = random.Random(11)
+    for f in I.gen_traffic(random.Random(11), env.cfg, 200):
+        await env.send_frame(f, rng, idle_in_frame=0.03, gap=rng.choice((0, 0, 1, 3, 10)))
+    await env.drain()
+    env.check()
+    hits = {"msg w->r": int(dut.g_mq.u_msg_fifo.u_w2r.n_hit.value),
+            "msg r->w": int(dut.g_mq.u_msg_fifo.u_r2w.n_hit.value),
+            "ord w->r": int(dut.g_oq.u_ord_fifo.u_w2r.n_hit.value),
+            "ord r->w": int(dut.g_oq.u_ord_fifo.u_r2w.n_hit.value)}
+    dut._log.info(f"bits that resolved at random inside the sampling aperture: {hits}")
+    assert all(v > 0 for v in hits.values()), hits

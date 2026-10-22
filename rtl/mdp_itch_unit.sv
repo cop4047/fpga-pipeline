@@ -12,7 +12,9 @@
 // block tracker raises `end_ev` in the beat that holds the block's last byte,
 // and only if that byte really arrived.  A truncated block therefore never
 // finishes; the parent clears it at the end of the frame.
-module mdp_itch_unit (
+module mdp_itch_unit #(
+    parameter int TS_W = 40
+) (
     input  logic         clk,
     input  logic         rst,
     input  logic         tick,        // a new {prv, cur} beat pair is valid this cycle
@@ -24,11 +26,13 @@ module mdp_itch_unit (
     input  logic [15:0]  ld_len,      // body length in bytes
     input  logic [15:0]  ld_blk,      // index of this block within the packet
     input  logic         end_ev,      // last byte of this unit's block is in the current beat
+    input  logic [TS_W-1:0] ts_in,    // hardware time in the cycle of end_ev (latched with it)
     input  logic         clear,       // frame over: abandon any unfinished block
     input  logic [16:0]  skip,        // blocks with index < skip are retransmitted duplicates
     output logic         done_msg,    // pulse: block complete, `msg` / `o_len` hold it
     output logic         done_dup,    // pulse: block complete but a duplicate (discard)
     output logic [15:0]  o_len,
+    output logic [TS_W-1:0] o_ts,     // arrival time of the block's last byte (valid with done_msg)
     output logic [319:0] msg
 );
     logic        active, skip1, end_seen;
@@ -58,7 +62,9 @@ module mdp_itch_unit (
             blk      <= 16'd0;
             o_len    <= 16'd0;
             msg      <= 320'd0;
+            o_ts     <= '0;
         end else begin
+            if (end_ev) o_ts <= ts_in;
             if (end_ev && active) end_seen <= 1'b1;
             if (tick && active) begin
                 if (skip1) begin

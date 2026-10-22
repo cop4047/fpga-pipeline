@@ -33,7 +33,8 @@ module mdp_itch_book #(
     parameter int SYM_W  = 2,
     parameter int LVL_W  = 6,
     parameter int ORD_AW = 10,
-    parameter int TICK   = 100
+    parameter int TICK   = 100,
+    parameter int TS_W   = 40
 ) (
     input  logic         clk,
     input  logic         rst,
@@ -41,6 +42,7 @@ module mdp_itch_book #(
     input  logic         in_valid,
     input  logic [15:0]  in_len,
     input  logic [287:0] in_data,
+    input  logic [TS_W-1:0] in_ts,      // ingress timestamp of this message (carried to the order)
     output logic         in_ready,
     output logic         ready,        // init sweep finished (RAMs cleared)
     // configuration (static while running)
@@ -54,6 +56,7 @@ module mdp_itch_book #(
     output logic [15:0]  ord_sym,
     output logic [LVL_W-1:0] ord_lvl,
     output logic [31:0]  ord_qty,
+    output logic [TS_W-1:0] ord_ts,     // ingress timestamp of the message that triggered the order
     // message dropped / ignored (one-cycle pulses)
     output logic         drop_valid,
     output logic [3:0]   drop_reason,
@@ -98,6 +101,7 @@ module mdp_itch_book #(
     logic [287:0] raw;             // bytes 1..10 (locate, tracking, timestamp) are never used
     /* verilator lint_on UNUSEDSIGNAL */
     logic [15:0]  raw_len;
+    logic [TS_W-1:0] raw_ts;
     wire  [7:0]   r_type  = raw[287:280];
     wire  [63:0]  r_ref   = raw[199:136];                      // bytes 11..18 (all types)
     wire  [63:0]  r_ref2  = raw[135:72];                       // U: new reference, bytes 19..26
@@ -369,6 +373,7 @@ module mdp_itch_book #(
             if (accept) begin
                 raw     <= in_data;
                 raw_len <= in_len;
+                raw_ts  <= in_ts;
             end
 
             case (state)
@@ -453,6 +458,7 @@ module mdp_itch_book #(
                     ord_sym      <= 16'(w_sym);
                     ord_lvl      <= ask_lvl_c;
                     ord_qty      <= cfg_qty;
+                    ord_ts       <= raw_ts;
                     if (cond_c && !fired[w_sym]) begin
                         ord_valid    <= 1'b1;
                         fired[w_sym] <= 1'b1;

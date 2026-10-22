@@ -3,19 +3,25 @@
 Receive Nasdaq **ITCH 5.0 over MoldUDP64** frames on a 64-bit AXI-Stream, keep a
 price-level order book in hardware, fire an order on a price trigger, and emit the
 order frame. **7–8 clock cycles (45–51 ns @ 156.25 MHz) tick-to-trade in RTL
-simulation.** Built as a portfolio project for low-latency / HFT FPGA roles:
+simulation**, measured by the design itself with an IEEE 1588-style hardware clock;
+the book can also run on a separate, unrelated core clock behind Gray-coded
+asynchronous FIFOs. Built as a portfolio project for low-latency / HFT FPGA roles:
 spec → Python golden model → C++ software baseline → RTL → constrained-random
 verification with mutation testing → synthesis flow → (next) board.
 
 ```
 s_axis -> itch_frame -> [FIFO] -> itch_book + trigger -> [FIFO] -> order_tx -> m_axis
           eth/ip/udp    bypass    decode, order table,     bypass     60B frame
-          MoldUDP64                level RAM, occupancy
-          seq tracking,
-          message framer
+          MoldUDP64      or       level RAM, occupancy      or            |
+          seq tracking,  async    (core clock when          async     lat = rtc - stamp
+          message framer FIFO      ASYNC_CORE=1)            FIFO      -> mdp_lat_stats
+             ^ stamp each message with mdp_ptp_rtc (64-bit hardware clock); the stamp
+               travels with the message and the order, so latency is measured on-chip
 ```
 
 Protocol rules and every design decision: **[docs/ITCH50.md](docs/ITCH50.md)**.
+Hardware timestamps, the clock and the clock-domain crossing, with what is and is not
+verified: **[docs/PTP_CDC.md](docs/PTP_CDC.md)**.
 The earlier fixed-format "ITCH-lite" design (`mdp_top`, tags `v1`, `v2`, `v2.1`) is
 kept and still builds; it is described in **[docs/SPEC.md](docs/SPEC.md)**.
 
@@ -27,16 +33,26 @@ kept and still builds; it is described in **[docs/SPEC.md](docs/SPEC.md)**.
 |---|---|
 | Protocol | ITCH 5.0 `A F E C X D U` (others parsed, skipped, counted) in MoldUDP64: sequence tracking (gap, duplicate, heartbeat, end of session), length-prefixed unaligned messages at 64 bits/clock |
 | Tick-to-trade (simulated, idle pipeline) | **7–8 cycles = 45–51 ns @ 156.25 MHz (35–40 ns @ 200 MHz)**, by the byte lane where the message starts. ITCH-lite took 5: real framing and decode cost 2–3 cycles. |
+| Hardware timestamps | 64-bit RTC (32.32 ns, rate trim 0.036 ppb/LSB, phase step) in the network domain; every message stamped when its last byte arrives; the stamp rides through the book into the order. `mdp_lat_stats` keeps last/min/max/sum/count. **Verified in simulation that the latency the hardware reports for every order equals the simulator's own timeline**, in both builds. |
+| Clock-domain crossing | `ASYNC_CORE=1`: book on `clk_core`, Gray-coded async FIFOs on both crossings, per-domain reset synchronisers. Tested over 9 unrelated clock pairs with a CDC-aware simulation model. Idle tick-to-trade becomes **10–12 cycles = 64–77 ns** (core at 250 MHz): the crossings cost about +20–25 ns, so a faster core does not buy latency here. |
 | Software baseline | C++ port of the same rules, bit-exact with the model: 30.6 M msgs/s single core; about 100 ns frame → order built (±20 ns, laptop under WSL, not isolated) |
-| Regression | 11 full-pipeline cocotb tests + 4 framer tests, ≈ 24 k random messages per run, all 8 drop reasons, bit-exact vs Python model |
-| Mutation testing | framer 16/16 non-equivalent bugs caught (17 injected); book 49/49 (50 injected). Each equivalent mutant is explained in the script. |
+| Regression | RTC 5/5, async FIFO 5/5, pipeline 14/14 in both builds (one clock; two clocks), framer 4/4. The hardware-reported latency of every order is compared against the simulator timeline. |
+| Mutation testing | framer 16/16 non-equivalent bugs caught (17 injected); book 49/49 (50 injected); timestamp/clock/CDC additions 43/43 non-equivalent caught (45 injected: RTC 8, FIFO 13, framer stamps 6, pipeline stamps/stats 13, CDC wiring 5). Each equivalent mutant is explained in the script. |
 | Lint | Verilator `-Wall` clean |
 | yosys xc7 estimate | ≈ 4,300 LUT, ≈ 3,000 FF, 4 block RAMs (*estimate only*) |
 | **Vivado timing / utilisation** | **not measured yet** for this design. Run `syn/build.tcl` then `syn/sweep.tcl`. |
 | Hardware | not yet |
 
 Latency is *core logic between the AXI-Streams* in simulation. It excludes
-MAC/PCS/PHY and is not a hardware measurement.
+MAC/PCS/PHY and is not a hardware measurement. "Measured by the hardware" above means the
+RTL's own timestamp counter inside the simulation, not a measurement on a board.
+
+| Simulated tick-to-trade (idle pipeline) | best | worst |
+|---|---|---|
+| One clock (156.25 MHz) | 44.8 ns (7 cycles) | 51.2 ns (8 cycles) |
+| `ASYNC_CORE=1`, core 250 MHz | 70.4 ns | 76.8 ns |
+
+Core clocks slower than the network clock queue messages, so latency there includes waiting (see `docs/PTP_CDC.md`).
 
 ### ITCH-lite design (v2.1), measured in Vivado
 
@@ -79,7 +95,10 @@ What this showed:
 pip install cocotb pytest            # + iverilog and verilator from your package manager
 make itch-pipe            # full ITCH 5.0 pipeline cocotb regression, ~35 s
 make itch-sim             # framer-only regression
-make itch-lint            # Verilator -Wall on the ITCH design
+make itch-lint            # Verilator -Wall on the ITCH design (both clock configurations)
+make ptp-sim              # clock + async FIFO unit tests, then the pipeline with one and with two clocks, ~6 min
+make itch-pipe ASYNC=1 CORE_PERIOD_PS=4000    # pipeline with a 250 MHz core clock, different phase
+make ptp-mutation         # inject bugs into clock / FIFO / timestamp path / CDC wiring
 make itch-mutation        # framer: inject 17 bugs, ~3 min
 make itch-book-mutation   # book: inject 50 bugs, ~12 min
 make itch-yosys           # open-source resource estimate
@@ -112,14 +131,15 @@ Vivado native for synthesis; the Vivado Tcl scripts are plain batch Tcl.
 ```
 rtl/       ITCH 5.0:  mdp_itch_frame  mdp_itch_unit  mdp_itch_book  mdp_itch_top
            shared:    mdp_fifo  mdp_order_tx
+           timestamp + CDC: mdp_ptp_rtc  mdp_lat_stats  mdp_async_fifo  mdp_sync2  mdp_rst_sync
            ITCH-lite: mdp_hdr_parse  mdp_msg_asm  mdp_book  mdp_top
 model/     itch50.py   ITCH 5.0 / MoldUDP64 golden model, frame builders, generator
            mdp_model.py   ITCH-lite model (also supplies the order-frame builder)
 baseline/  cpu_itch50.cpp  gen_itch_vectors.py   C++ software baseline, bit-exact check + benchmark
-tb_itch/   test_framer.py  test_pipeline.py  mutation_test.py  Makefile
+tb_itch/   test_framer.py  test_pipeline.py  test_rtc.py  test_async_fifo.py  mutation_test.py  Makefile
 tb/        ITCH-lite testbench and mutation test
-syn/       build.tcl  sweep.tcl  yosys.ys  yosys_itch.ys  board_template.xdc
-docs/      ITCH50.md (current design)  SPEC.md (ITCH-lite)  INTERVIEW.md  mutation_report.txt
+syn/       build.tcl  sweep.tcl  cdc.xdc  yosys.ys  yosys_itch.ys  yosys_itch_async.ys  board_template.xdc
+docs/      ITCH50.md (current design)  PTP_CDC.md (timestamps + CDC)  SPEC.md (ITCH-lite)  INTERVIEW.md  mutation_report.txt
 ```
 
 ## Next steps

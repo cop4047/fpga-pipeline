@@ -1,0 +1,5 @@
+# Same, TWO clocks: book on clk_core, Gray-coded async FIFOs (ASYNC_CORE=1).  Estimate only.
+read_verilog -sv rtl/mdp_fifo.sv rtl/mdp_sync2.sv rtl/mdp_async_fifo.sv rtl/mdp_rst_sync.sv rtl/mdp_ptp_rtc.sv rtl/mdp_lat_stats.sv rtl/mdp_itch_unit.sv rtl/mdp_itch_frame.sv rtl/mdp_itch_book.sv rtl/mdp_order_tx.sv rtl/mdp_itch_top.sv
+chparam -set ASYNC_CORE 1 mdp_itch_top
+synth_xilinx -top mdp_itch_top -family xc7 -noiopad
+tee -o syn/out_itch/yosys_stat_async.txt stat

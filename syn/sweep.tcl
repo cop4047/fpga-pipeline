@@ -11,7 +11,8 @@ set part    [expr {[info exists argv] && [llength $argv] > 0 ? [lindex $argv 0] 
 set periods [expr {[info exists argv] && [llength $argv] > 1 ? [lindex $argv 1] : "6.4 5.5 5.0 4.5 4.0"}]
 
 if {![info exists TOP]} { set TOP mdp_itch_top }
-set outname [expr {$TOP eq "mdp_top" ? "out" : "out_itch"}]
+if {![info exists ASYNC_CORE]} { set ASYNC_CORE 0 }       ;# same switch as build.tcl; sweeps the network clock only
+set outname [expr {$TOP eq "mdp_top" ? "out" : ($ASYNC_CORE ? "out_itch_async" : "out_itch")}]
 set root [file normalize [file join [file dirname [info script]] ..]]
 set out  [file join $root syn $outname]
 set dcp  [file join $out ${TOP}_synth.dcp]

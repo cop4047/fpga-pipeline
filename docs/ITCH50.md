@@ -4,7 +4,7 @@ Status: **steps 1, 2 and 3 done** (RTL complete and verified in simulation; Viva
 not yet measured). Step 1: Python model `model/itch50.py`, vector generator,
 C++ port `baseline/cpu_itch50.cpp` (bit-exact, sanitizer-clean). Step 2: RTL framer
 `rtl/mdp_itch_frame.sv` + `rtl/mdp_itch_unit.sv`, verified against the model (see
-"Framer" below). Step 3: book, top level and full-pipeline regression (see "Book and pipeline" below). Step 4 remains: Vivado
+"Framer" below). Step 3: book, top level and full-pipeline regression (see "Book and pipeline" below). Step 4 (timestamps, CDC) is done in simulation, see PTP_CDC.md. Remaining: Vivado
 timing and the README timing log. This replaces "ITCH-lite" (fixed 16-byte
 messages) with the real Nasdaq TotalView-ITCH 5.0 message layouts carried in
 MoldUDP64, the way the feed is actually delivered. Layouts below were checked
@@ -171,3 +171,9 @@ deliberately not done yet because it needs Vivado feedback.
 
 Not yet done: Vivado timing and utilisation for the ITCH design (run `syn/build.tcl`, then `syn/sweep.tcl`;
 results go to `syn/out_itch`), step 5 (real Nasdaq sample data).
+
+## Hardware timestamps and clock crossing (step 4)
+
+Done in simulation: a 64-bit hardware clock, per-message ingress stamps, a Gray-coded asynchronous
+FIFO between the network and core clocks, and an order-latency counter. See `docs/PTP_CDC.md`.
+Vivado timing of this version is still to be run (`syn/build.tcl`, then `set ASYNC_CORE 1`).

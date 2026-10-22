@@ -127,6 +127,9 @@ class Model:
         self.cid = 1
         self.expected: Optional[int] = None
         self.emitted: List[bytes] = []              # messages handed to the book, in order
+        self.emit_pos: List[Tuple[int, int]] = []   # per emitted message: (frame number, offset of its last byte)
+        self.order_msg: List[int] = []              # per order: index into `emitted` of the message that triggered it
+        self.nframes = 0
         self.tobs: List[L.Tob] = []
         self.drops: List[int] = []
         self.orders_tx: List[bytes] = []
@@ -135,6 +138,8 @@ class Model:
 
     # ---- packet level ------------------------------------------------------
     def process_frame(self, f: bytes) -> None:
+        fno = self.nframes
+        self.nframes += 1
         n = len(f)
         c = self.cfg
         if n < BLOCKS_OFF:
@@ -177,6 +182,7 @@ class Model:
             self.expected = seq + k + 1
             self.st["msgs"] += 1
             self.emitted.append(m)
+            self.emit_pos.append((fno, pos - 1))
             self._message(m)
 
     # ---- message level -----------------------------------------------------
@@ -283,6 +289,7 @@ class Model:
         cond = bool(self.cfg.en and av and ap <= self.cfg.buy_px)
         if cond and not self.fired[sym]:
             self.orders_tx.append(L.build_order_frame(self.cfg, sym, ap, self.cfg.qty, self.cid))
+            self.order_msg.append(len(self.emitted) - 1)
             self.cid += 1
             self.fired[sym] = True
         elif not cond:

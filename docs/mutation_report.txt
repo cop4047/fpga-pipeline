@@ -14,3 +14,62 @@
 [KILLED]   last-beat tkeep wrong  (9/10 tests failed)
 
 14 killed, 0 survived, of 14 mutants
+
+=== Timestamp / RTC / CDC additions (make ptp-mutation) ===
+=== SUITE ts-framer
+[KILLED]   stamped when the block starts  (3/4 tests failed)
+[KILLED]   stamped after the message is presented  (3/4 tests failed)
+[EQUIVALENT] second end event does not restamp (tracker raises one end event per block)
+[KILLED]   always unit 0's stamp  (2/4 tests failed)
+[KILLED]   unit 0 stamp one cycle early  (3/4 tests failed)
+[KILLED]   unit 1 stamp lost  (2/4 tests failed)
+
+5 killed, 1 survived, 0 equivalent (cannot be killed), of 6 mutants
+=== EXIT ts-framer 1
+=== SUITE ts-pipe
+[KILLED]   book drops the stamp  (10/14 tests failed)
+[KILLED]   order carries the NEXT message's stamp  (4/14 tests failed)
+[KILLED]   latency sign reversed  (10/14 tests failed)
+[KILLED]   latency counted every waiting cycle  (1/14 tests failed)
+[KILLED]   timestamp from the wrong clock bits  (10/14 tests failed)
+[KILLED]   order stamped at issue time, not ingress time  (10/14 tests failed)
+[KILLED]   message FIFO drops the stamp LSB  (7/14 tests failed)
+[KILLED]   minimum inverted  (10/14 tests failed)
+[KILLED]   maximum inverted  (10/14 tests failed)
+[EQUIVALENT] sum drops the high bits (latency never exceeds 2^32 units)
+[KILLED]   count wrong  (10/14 tests failed)
+[KILLED]   last value not kept  (10/14 tests failed; re-run after fixing the mutant pattern)
+[KILLED]   clock step not wired  (5/14 tests failed)
+
+11 killed, 1 survived, 0 equivalent (cannot be killed), of 12 mutants
+=== EXIT ts-pipe 1
+=== SUITE cdc-pipe
+[KILLED]   message FIFO read side on the wrong clock  (12/14 tests failed)
+[KILLED]   order FIFO write side on the wrong clock  (10/14 tests failed)
+[KILLED]   book left on the network clock  (13/14 tests failed)
+[KILLED]   message FIFO write side on the core clock  (13/14 tests failed)
+[KILLED]   order FIFO read side on the core clock  (10/14 tests failed)
+
+5 killed, 0 survived, 0 equivalent (cannot be killed), of 5 mutants
+=== EXIT cdc-pipe 0
+=== SUITE fifo
+[KILLED]   write pointer crosses in BINARY  (4/5 tests failed)
+[KILLED]   read pointer crosses in BINARY  (4/5 tests failed)
+[KILLED]   full compare without MSB inversion  (5/5 tests failed)
+[KILLED]   full from current pointer, not next  (4/5 tests failed)
+[KILLED]   empty from current pointer, not next  (4/5 tests failed)
+[KILLED]   write while full not blocked  (4/5 tests failed)
+[KILLED]   read while empty not blocked  (4/5 tests failed)
+[KILLED]   read data from the next address  (4/5 tests failed)
+[KILLED]   Gray conversion wrong (several bits change)  (4/5 tests failed)
+[KILLED]   overflow not reported  (4/5 tests failed)
+[KILLED]   write-side count uses Gray as binary  (3/5 tests failed)
+[KILLED]   read-side count uses Gray as binary  (4/5 tests failed)
+[KILLED]   memory write drops the LSB  (5/5 tests failed)
+
+13 killed, 0 survived, 0 equivalent (cannot be killed), of 13 mutants
+=== EXIT fifo 0
+
+[exited with code 0]
+RTC suite: 8 killed, 0 survived, of 8 mutants (earlier run)
+TOTAL new: 45 injected, 43 caught, 2 equivalent

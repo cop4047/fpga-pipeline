@@ -1,0 +1,16 @@
+{
+  "crossing_latency": {
+    "w4000_r6400": {
+      "max_read_cycles": 3.12,
+      "min_read_cycles": 2.56
+    },
+    "w6400_r4000": {
+      "max_read_cycles": 3.19,
+      "min_read_cycles": 2.06
+    },
+    "w6400_r6400": {
+      "max_read_cycles": 3.0,
+      "min_read_cycles": 2.06
+    }
+  }
+}

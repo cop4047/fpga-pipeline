@@ -1,4 +1,60 @@
 {
+  "cdc_sweep": {
+    "3333ps+777": {
+      "max_ns": 76.8,
+      "mean_ns": 67.31,
+      "min_ns": 57.6,
+      "orders": 29
+    },
+    "4000ps+0": {
+      "max_ns": 76.8,
+      "mean_ns": 73.89,
+      "min_ns": 70.4,
+      "orders": 22
+    },
+    "4000ps+1370": {
+      "max_ns": 96.0,
+      "mean_ns": 74.19,
+      "min_ns": 64.0,
+      "orders": 27
+    },
+    "5000ps+2900": {
+      "max_ns": 96.0,
+      "mean_ns": 84.15,
+      "min_ns": 76.8,
+      "orders": 27
+    },
+    "6400ps+0": {
+      "max_ns": 179.2,
+      "mean_ns": 113.6,
+      "min_ns": 96.0,
+      "orders": 40
+    },
+    "6400ps+3200": {
+      "max_ns": 172.8,
+      "mean_ns": 114.19,
+      "min_ns": 89.6,
+      "orders": 19
+    },
+    "6401ps+1111": {
+      "max_ns": 134.4,
+      "mean_ns": 104.04,
+      "min_ns": 89.6,
+      "orders": 39
+    },
+    "7000ps+500": {
+      "max_ns": 332.8,
+      "mean_ns": 129.35,
+      "min_ns": 96.0,
+      "orders": 38
+    },
+    "9000ps+4321": {
+      "max_ns": 876.8,
+      "mean_ns": 400.27,
+      "min_ns": 140.8,
+      "orders": 35
+    }
+  },
   "latency": {
     "best_cycles": 7,
     "best_ns_at_156p25MHz": 44.8,
@@ -28,5 +84,63 @@
     },
     "worst_cycles": 8,
     "worst_ns_at_156p25MHz": 51.2
+  },
+  "latency_async_cycles_of_net_clock": {
+    "best_cycles": 10,
+    "best_ns_at_156p25MHz": 64.0,
+    "cycles_by_start_lane": {
+      "0": 11,
+      "1": 11,
+      "2": 11,
+      "3": 10,
+      "4": 11,
+      "5": 11,
+      "6": 11,
+      "7": 12
+    },
+    "stages_best": {
+      "book_accept": 2,
+      "frame_m_valid": 0,
+      "order_req": 6,
+      "tob_tap": 6,
+      "tx_first_beat": 16
+    },
+    "stages_worst": {
+      "book_accept": 4,
+      "frame_m_valid": 0,
+      "order_req": 7,
+      "tob_tap": 7,
+      "tx_first_beat": 19
+    },
+    "worst_cycles": 12,
+    "worst_ns_at_156p25MHz": 76.8
+  },
+  "latency_hw": {
+    "best_ns": 44.797,
+    "ns_by_start_lane": {
+      "0": 51.199,
+      "1": 51.199,
+      "2": 51.203,
+      "3": 44.801,
+      "4": 44.797,
+      "5": 44.801,
+      "6": 51.203,
+      "7": 51.203
+    },
+    "worst_ns": 51.203
+  },
+  "latency_hw_async_core4000ps": {
+    "best_ns": 70.398,
+    "ns_by_start_lane": {
+      "0": 70.398,
+      "1": 76.801,
+      "2": 70.398,
+      "3": 70.398,
+      "4": 70.398,
+      "5": 70.402,
+      "6": 70.402,
+      "7": 70.398
+    },
+    "worst_ns": 76.801
   }
 }
