@@ -36,8 +36,22 @@ if {$TOP eq "mdp_top"} {
 }
 
 set root [file normalize [file join [file dirname [info script]] ..]]
+# Named run: `set RUN 02-bram-order-table` before sourcing puts everything in syn/runs/<RUN>/ so no run
+# overwrites another.  Without RUN the old folders (out_itch, out_itch_async, out) are used.
+if {[info exists RUN]} { set outname "runs/$RUN" }
 set out  [file join $root syn $outname]
 file mkdir $out
+# which source version made these results
+set commit "unknown"; set dirty "unknown"
+catch { set commit [string trim [exec git -C $root rev-parse --short HEAD]] }
+catch { if {[string trim [exec git -C $root status --porcelain -- rtl]] eq ""} { set dirty clean } else { set dirty "UNCOMMITTED CHANGES IN rtl/" } }
+set fh [open [file join $out info.txt] w]
+set runname $outname; if {[info exists RUN]} { set runname $RUN }
+puts $fh "run:        $runname"
+puts $fh "date:       [clock format [clock seconds] -format {%Y-%m-%d %H:%M}]"
+puts $fh "git commit: $commit   (rtl: $dirty)"
+puts $fh "top:        $TOP   ASYNC_CORE=$ASYNC_CORE   part=$part   period=$period ns   core_period=$CORE_PERIOD ns"
+close $fh
 
 foreach m $rtl { read_verilog -sv [file join $root rtl ${m}.sv] }
 

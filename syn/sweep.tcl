@@ -14,6 +14,7 @@ if {![info exists TOP]} { set TOP mdp_itch_top }
 if {![info exists ASYNC_CORE]} { set ASYNC_CORE 0 }       ;# same switch as build.tcl; sweeps the network clock only
 set outname [expr {$TOP eq "mdp_top" ? "out" : ($ASYNC_CORE ? "out_itch_async" : "out_itch")}]
 set root [file normalize [file join [file dirname [info script]] ..]]
+if {[info exists RUN]} { set outname "runs/$RUN" }   ;# same named-run switch as build.tcl
 set out  [file join $root syn $outname]
 set dcp  [file join $out ${TOP}_synth.dcp]
 

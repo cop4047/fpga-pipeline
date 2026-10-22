@@ -10,6 +10,7 @@
 #   make itch-lint      Verilator -Wall lint of the whole ITCH design
 #   make itch-mutation  inject bugs into the framer, check the TB catches them  ~3 min
 #   make itch-book-mutation  same for the book (50 bugs, whole-pipeline tests)  ~12 min
+#   syn/sweep_par.tcl   all clock targets at once (separate Vivado processes)
 #   make itch-yosys     open-source resource ESTIMATE of the ITCH design
 #   make ptp-sim        hardware clock + async FIFO unit tests, then the whole pipeline with one clock
 #                       and with two unrelated clocks (CDC-aware simulation model)          ~6 min

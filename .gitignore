@@ -5,3 +5,13 @@ model/__pycache__/
 *.vcd
 *.fst
 syn/out/
+syn/out_itch/*.dcp
+syn/out_itch_async/*.dcp
+syn/runs/**/*.dcp
+syn/runs/**/*.log
+syn/runs/**/*.jou
+syn/runs/**/*.csv.tmp
+*.jou
+vivado*.log
+vivado*.str
+clockInfo.txt
