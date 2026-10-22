@@ -114,7 +114,11 @@ module mdp_itch_book #(
     wire  [ORD_AW-1:0] in_idx = in_data[136 +: ORD_AW];        // low bits of ref (bytes 11..18)
 
     // ---------------------------------------------------------- order table
-    logic [OW-1:0] ord_mem [0:(1<<ORD_AW)-1];
+    // Timing: Vivado 2026.1 put this in distributed RAM (LUTRAM), which gave a 144-load read address and a
+    // 1024:1 LUT read mux on the critical path (-0.545 ns @ 250 MHz).  Block RAM has a registered read inside
+    // the RAM and no mux tree.  Same behaviour: the read is registered (ord_q) and a same-cycle write is
+    // read-first (old data), which is what the testbench already checks.
+    (* ram_style = "block" *) logic [OW-1:0] ord_mem [0:(1<<ORD_AW)-1];
     logic [OW-1:0] ord_q;
     logic          ord_we;
     logic [ORD_AW-1:0] ord_waddr;
