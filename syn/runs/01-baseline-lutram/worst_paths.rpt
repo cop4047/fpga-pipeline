@@ -1,0 +1,256 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2026 Advanced Micro Devices, Inc. All Rights Reserved.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2026.1 (win64) Build 6511674 Tue Jun 16 11:02:23 MDT 2026
+| Date         : Thu Oct 22 15:26:00 2026
+| Host         : A-Laptop running 64-bit major release  (build 9200)
+| Command      : report_timing -max_paths 5 -sort_by slack -path_type full -file C:/Users/alros/Documents/FPGA-Project/fpga-pipeline/syn/out_itch/worst_paths.rpt
+| Design       : mdp_itch_top
+| Device       : 7k70t-fbg676
+| Speed File   : -2  PRODUCTION 1.12 2017-02-17
+| Design State : Routed
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Timing Report
+
+Slack (MET) :             0.680ns  (required time - arrival time)
+  Source:                 u_book/init_busy_reg/C
+                            (rising edge-triggered cell FDSE clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Destination:            u_book/ord_mem_reg_r1_640_703_9_11/RAMA/WADR2
+                            (rising edge-triggered cell RAMD64E clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            6.400ns  (clk rise@6.400ns - clk rise@0.000ns)
+  Data Path Delay:        5.608ns  (logic 0.302ns (5.386%)  route 5.306ns (94.614%))
+  Logic Levels:           1  (LUT5=1)
+  Clock Path Skew:        -0.027ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.510ns = ( 6.910 - 6.400 ) 
+    Source Clock Delay      (SCD):    0.537ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r  <hidden>
+                         propagated clock network latency
+                                                      0.537     0.537    <hidden>
+    SLICE_X8Y40          FDSE                         0.000     0.537 r  u_book/init_busy_reg/C
+    SLICE_X8Y40          FDSE (Prop_fdse_C_Q)         0.259     0.796 r  u_book/init_busy_reg/Q
+                         net (fo=236, routed)         1.812     2.608    u_book/init_busy
+    SLICE_X24Y29         LUT5 (Prop_lut5_I4_O)        0.043     2.651 r  u_book/ord_mem_reg_r1_0_63_0_2_i_14/O
+                         net (fo=640, routed)         3.493     6.145    u_book/ord_mem_reg_r1_640_703_9_11/ADDRD2
+    SLICE_X50Y2          RAMD64E                                      r  u_book/ord_mem_reg_r1_640_703_9_11/RAMA/WADR2
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)        6.400     6.400 r  <hidden>
+                         propagated clock network latency
+                                                      0.510     6.910    <hidden>
+                         clock pessimism              0.000     6.910    <hidden>
+                         clock uncertainty           -0.035     6.875    <hidden>
+    SLICE_X50Y2          RAMD64E (Setup_ramd64e_CLK_WADR2)
+                                                     -0.050     6.825    u_book/ord_mem_reg_r1_640_703_9_11/RAMA
+  -------------------------------------------------------------------
+                         required time                          6.825    <hidden>
+                         arrival time                          -6.145    <hidden>
+  -------------------------------------------------------------------
+                         slack                                  0.680    <hidden>
+
+Slack (MET) :             0.680ns  (required time - arrival time)
+  Source:                 u_book/init_busy_reg/C
+                            (rising edge-triggered cell FDSE clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Destination:            u_book/ord_mem_reg_r1_640_703_9_11/RAMB/WADR2
+                            (rising edge-triggered cell RAMD64E clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            6.400ns  (clk rise@6.400ns - clk rise@0.000ns)
+  Data Path Delay:        5.608ns  (logic 0.302ns (5.386%)  route 5.306ns (94.614%))
+  Logic Levels:           1  (LUT5=1)
+  Clock Path Skew:        -0.027ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.510ns = ( 6.910 - 6.400 ) 
+    Source Clock Delay      (SCD):    0.537ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r  <hidden>
+                         propagated clock network latency
+                                                      0.537     0.537    <hidden>
+    SLICE_X8Y40          FDSE                         0.000     0.537 r  u_book/init_busy_reg/C
+    SLICE_X8Y40          FDSE (Prop_fdse_C_Q)         0.259     0.796 r  u_book/init_busy_reg/Q
+                         net (fo=236, routed)         1.812     2.608    u_book/init_busy
+    SLICE_X24Y29         LUT5 (Prop_lut5_I4_O)        0.043     2.651 r  u_book/ord_mem_reg_r1_0_63_0_2_i_14/O
+                         net (fo=640, routed)         3.493     6.145    u_book/ord_mem_reg_r1_640_703_9_11/ADDRD2
+    SLICE_X50Y2          RAMD64E                                      r  u_book/ord_mem_reg_r1_640_703_9_11/RAMB/WADR2
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)        6.400     6.400 r  <hidden>
+                         propagated clock network latency
+                                                      0.510     6.910    <hidden>
+                         clock pessimism              0.000     6.910    <hidden>
+                         clock uncertainty           -0.035     6.875    <hidden>
+    SLICE_X50Y2          RAMD64E (Setup_ramd64e_CLK_WADR2)
+                                                     -0.050     6.825    u_book/ord_mem_reg_r1_640_703_9_11/RAMB
+  -------------------------------------------------------------------
+                         required time                          6.825    <hidden>
+                         arrival time                          -6.145    <hidden>
+  -------------------------------------------------------------------
+                         slack                                  0.680    <hidden>
+
+Slack (MET) :             0.680ns  (required time - arrival time)
+  Source:                 u_book/init_busy_reg/C
+                            (rising edge-triggered cell FDSE clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Destination:            u_book/ord_mem_reg_r1_640_703_9_11/RAMC/WADR2
+                            (rising edge-triggered cell RAMD64E clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            6.400ns  (clk rise@6.400ns - clk rise@0.000ns)
+  Data Path Delay:        5.608ns  (logic 0.302ns (5.386%)  route 5.306ns (94.614%))
+  Logic Levels:           1  (LUT5=1)
+  Clock Path Skew:        -0.027ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.510ns = ( 6.910 - 6.400 ) 
+    Source Clock Delay      (SCD):    0.537ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r  <hidden>
+                         propagated clock network latency
+                                                      0.537     0.537    <hidden>
+    SLICE_X8Y40          FDSE                         0.000     0.537 r  u_book/init_busy_reg/C
+    SLICE_X8Y40          FDSE (Prop_fdse_C_Q)         0.259     0.796 r  u_book/init_busy_reg/Q
+                         net (fo=236, routed)         1.812     2.608    u_book/init_busy
+    SLICE_X24Y29         LUT5 (Prop_lut5_I4_O)        0.043     2.651 r  u_book/ord_mem_reg_r1_0_63_0_2_i_14/O
+                         net (fo=640, routed)         3.493     6.145    u_book/ord_mem_reg_r1_640_703_9_11/ADDRD2
+    SLICE_X50Y2          RAMD64E                                      r  u_book/ord_mem_reg_r1_640_703_9_11/RAMC/WADR2
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)        6.400     6.400 r  <hidden>
+                         propagated clock network latency
+                                                      0.510     6.910    <hidden>
+                         clock pessimism              0.000     6.910    <hidden>
+                         clock uncertainty           -0.035     6.875    <hidden>
+    SLICE_X50Y2          RAMD64E (Setup_ramd64e_CLK_WADR2)
+                                                     -0.050     6.825    u_book/ord_mem_reg_r1_640_703_9_11/RAMC
+  -------------------------------------------------------------------
+                         required time                          6.825    <hidden>
+                         arrival time                          -6.145    <hidden>
+  -------------------------------------------------------------------
+                         slack                                  0.680    <hidden>
+
+Slack (MET) :             0.680ns  (required time - arrival time)
+  Source:                 u_book/init_busy_reg/C
+                            (rising edge-triggered cell FDSE clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Destination:            u_book/ord_mem_reg_r1_640_703_9_11/RAMD/WADR2
+                            (rising edge-triggered cell RAMD64E clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            6.400ns  (clk rise@6.400ns - clk rise@0.000ns)
+  Data Path Delay:        5.608ns  (logic 0.302ns (5.386%)  route 5.306ns (94.614%))
+  Logic Levels:           1  (LUT5=1)
+  Clock Path Skew:        -0.027ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.510ns = ( 6.910 - 6.400 ) 
+    Source Clock Delay      (SCD):    0.537ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r  <hidden>
+                         propagated clock network latency
+                                                      0.537     0.537    <hidden>
+    SLICE_X8Y40          FDSE                         0.000     0.537 r  u_book/init_busy_reg/C
+    SLICE_X8Y40          FDSE (Prop_fdse_C_Q)         0.259     0.796 r  u_book/init_busy_reg/Q
+                         net (fo=236, routed)         1.812     2.608    u_book/init_busy
+    SLICE_X24Y29         LUT5 (Prop_lut5_I4_O)        0.043     2.651 r  u_book/ord_mem_reg_r1_0_63_0_2_i_14/O
+                         net (fo=640, routed)         3.493     6.145    u_book/ord_mem_reg_r1_640_703_9_11/ADDRD2
+    SLICE_X50Y2          RAMD64E                                      r  u_book/ord_mem_reg_r1_640_703_9_11/RAMD/WADR2
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)        6.400     6.400 r  <hidden>
+                         propagated clock network latency
+                                                      0.510     6.910    <hidden>
+                         clock pessimism              0.000     6.910    <hidden>
+                         clock uncertainty           -0.035     6.875    <hidden>
+    SLICE_X50Y2          RAMD64E (Setup_ramd64e_CLK_WADR2)
+                                                     -0.050     6.825    u_book/ord_mem_reg_r1_640_703_9_11/RAMD
+  -------------------------------------------------------------------
+                         required time                          6.825    <hidden>
+                         arrival time                          -6.145    <hidden>
+  -------------------------------------------------------------------
+                         slack                                  0.680    <hidden>
+
+Slack (MET) :             0.738ns  (required time - arrival time)
+  Source:                 u_book/raw_reg[137]/C
+                            (rising edge-triggered cell FDRE clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Destination:            u_book/ord_mem_reg_r1_512_575_9_11/RAMB/I
+                            (rising edge-triggered cell RAMD64E clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            6.400ns  (clk rise@6.400ns - clk rise@0.000ns)
+  Data Path Delay:        5.402ns  (logic 0.682ns (12.625%)  route 4.720ns (87.375%))
+  Logic Levels:           5  (LUT3=1 LUT6=2 MUXF7=1 RAMD64E=1)
+  Clock Path Skew:        -0.027ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.510ns = ( 6.910 - 6.400 ) 
+    Source Clock Delay      (SCD):    0.537ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r  <hidden>
+                         propagated clock network latency
+                                                      0.537     0.537    <hidden>
+    SLICE_X23Y59         FDRE                         0.000     0.537 r  u_book/raw_reg[137]/C
+    SLICE_X23Y59         FDRE (Prop_fdre_C_Q)         0.223     0.760 r  u_book/raw_reg[137]/Q
+                         net (fo=32, routed)          1.669     2.429    u_book/r_idx1[1]
+    SLICE_X47Y30         LUT3 (Prop_lut3_I2_O)        0.049     2.478 r  u_book/ord_mem_reg_r1_0_63_9_11_i_8/O
+                         net (fo=144, routed)         1.458     3.935    u_book/ord_mem_reg_r1_192_255_9_11/ADDRB1
+    SLICE_X50Y1          RAMD64E (Prop_ramd64e_RADR1_O)
+                                                      0.136     4.071 r  u_book/ord_mem_reg_r1_192_255_9_11/RAMB/O
+                         net (fo=1, routed)           0.661     4.732    u_book/ord_mem_reg_r1_192_255_9_11_n_1
+    SLICE_X55Y11         LUT6 (Prop_lut6_I0_O)        0.043     4.775 r  u_book/ord_mem_reg_r1_0_63_9_11_i_22/O
+                         net (fo=1, routed)           0.000     4.775    u_book/ord_mem_reg_r1_0_63_9_11_i_22_n_0
+    SLICE_X55Y11         MUXF7 (Prop_muxf7_I0_O)      0.107     4.882 r  u_book/ord_mem_reg_r1_0_63_9_11_i_13/O
+                         net (fo=1, routed)           0.321     5.203    u_book/ord_mem_reg_r1_0_63_9_11_i_13_n_0
+    SLICE_X52Y11         LUT6 (Prop_lut6_I3_O)        0.124     5.327 r  u_book/ord_mem_reg_r1_0_63_9_11_i_2/O
+                         net (fo=32, routed)          0.612     5.939    u_book/ord_mem_reg_r1_512_575_9_11/DIB
+    SLICE_X50Y0          RAMD64E                                      r  u_book/ord_mem_reg_r1_512_575_9_11/RAMB/I
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)        6.400     6.400 r  <hidden>
+                         propagated clock network latency
+                                                      0.510     6.910    <hidden>
+                         clock pessimism              0.000     6.910    <hidden>
+                         clock uncertainty           -0.035     6.875    <hidden>
+    SLICE_X50Y0          RAMD64E (Setup_ramd64e_CLK_I)
+                                                     -0.198     6.677    u_book/ord_mem_reg_r1_512_575_9_11/RAMB
+  -------------------------------------------------------------------
+                         required time                          6.677    <hidden>
+                         arrival time                          -5.939    <hidden>
+  -------------------------------------------------------------------
+                         slack                                  0.738    <hidden>
+
+
+
+
