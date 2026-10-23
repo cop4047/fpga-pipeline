@@ -282,16 +282,24 @@ module mdp_itch_book #(
         for (int i = 0; i < (1<<LAW);    i++) lvl_mem[i] = '0;
     end
 
+    // Exactly ONE write port and ONE read port per memory.  The old form (one write for the power-up
+    // clear and another, in the else branch, for normal writes) was read by Vivado as two write ports.
+    // Run 02 suggests it then built each table twice, with the write data of one copy derived from a read
+    // of the other, and ignored ram_style = "block" (0 block RAMs used).  Selecting address, data and enable
+    // first gives a plain simple-dual-port RAM.  init_busy and the normal writes never overlap, so the
+    // behaviour is identical.
+    wire              ord_wr_en   = init_busy | ord_we;
+    wire [ORD_AW-1:0] ord_wr_addr = init_busy ? init_cnt : ord_waddr;
+    wire [OW-1:0]     ord_wr_data = init_busy ? '0       : ord_wdata;
+    wire              lvl_wr_en   = init_busy | lvl_we;
+    wire [LAW-1:0]    lvl_wr_addr = init_busy ? init_cnt[LAW-1:0] : lvl_waddr;
+    wire [31:0]       lvl_wr_data = init_busy ? 32'd0              : lvl_wdata;
+
     always_ff @(posedge clk) begin
         ord_q  <= ord_mem[ord_raddr];
         lvl_rd <= lvl_mem[lvl_raddr];
-        if (init_busy) begin
-            ord_mem[init_cnt]              <= '0;
-            lvl_mem[init_cnt[LAW-1:0]]     <= 32'd0;
-        end else begin
-            if (ord_we) ord_mem[ord_waddr] <= ord_wdata;
-            if (lvl_we) lvl_mem[lvl_waddr] <= lvl_wdata;
-        end
+        if (ord_wr_en) ord_mem[ord_wr_addr] <= ord_wr_data;
+        if (lvl_wr_en) lvl_mem[lvl_wr_addr] <= lvl_wr_data;
     end
 
     // ------------------------------------------------------------- occupancy

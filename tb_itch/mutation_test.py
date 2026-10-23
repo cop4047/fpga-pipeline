@@ -97,8 +97,8 @@ BOOK_MUTANTS = [
     # Equivalent: swapping + and - stores the NEGATED level quantity.  Only "is the level empty?"
     # is observable (no port exposes aggregate size), and negation preserves zero / non-zero.
     (BOOK, "mask[{w_sym, w_side}][w_lvl] <= (new_q != 32'd0);", "mask[{w_sym, w_side}][w_lvl] <= (new_q[15:0] != 16'd0);", "occupancy bit from low half"),
-    (BOOK, "lvl_mem[init_cnt[LAW-1:0]]     <= 32'd0;", "lvl_mem[init_cnt[LAW-1:0]]     <= lvl_mem[init_cnt[LAW-1:0]];", "level RAM not cleared after reset"),
-    (BOOK, "ord_mem[init_cnt]              <= '0;", "ord_mem[init_cnt]              <= ord_mem[init_cnt];", "order table not cleared after reset"),
+    (BOOK, "wire              lvl_wr_en   = init_busy | lvl_we;", "wire              lvl_wr_en   = lvl_we;", "level RAM not cleared after reset"),
+    (BOOK, "wire              ord_wr_en   = init_busy | ord_we;", "wire              ord_wr_en   = ord_we;", "order table not cleared after reset"),
     # --- replace sequencing
     (BOOK, "w_lvl   <= q_lvl;\n                        w_delta <= q_shs;", "w_lvl   <= w_lvl;\n                        w_delta <= q_shs;", "replacement added at the old level"),
     (BOOK, "w_delta <= q_shs;\n                        w_sub   <= 1'b0;", "w_delta <= oq_rem;\n                        w_sub   <= 1'b0;", "replacement uses wrong share count"),

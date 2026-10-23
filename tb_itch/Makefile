@@ -7,7 +7,7 @@
 #   make TOP=rtc               mdp_ptp_rtc unit tests (cycle-exact against a Python model)
 #   make ITCH_SEEDS=1,2,3,4,5,6 ITCH_FRAMES=4000    longer random run
 SIM                ?= icarus
-SIM_BUILD          ?= sim_build_$(TOP)
+SIM_BUILD          ?= sim_build_$(TOP)_a$(ASYNC)
 TOPLEVEL_LANG       = verilog
 TOP                ?= frame
 ASYNC              ?= 0

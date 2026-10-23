@@ -35,6 +35,7 @@ if {$TOP eq "mdp_top"} {
                   mdp_itch_unit mdp_itch_frame mdp_itch_book mdp_order_tx mdp_itch_top]
 }
 
+puts "=== BUILD: TOP=$TOP ASYNC_CORE=$ASYNC_CORE period=$period core_period=$CORE_PERIOD ==="
 set root [file normalize [file join [file dirname [info script]] ..]]
 # Named run: `set RUN 02-bram-order-table` before sourcing puts everything in syn/runs/<RUN>/ so no run
 # overwrites another.  Without RUN the old folders (out_itch, out_itch_async, out) are used.
@@ -85,3 +86,5 @@ write_checkpoint -force [file join $out ${TOP}_routed.dcp]
 
 set wns [get_property SLACK [get_timing_paths -max_paths 1 -setup]]
 puts "RESULT top=$TOP part=$part period_ns=$period WNS_ns=$wns"
+# forget the settings so the next build starts from the defaults (a leftover ASYNC_CORE=1 once made a one-clock run a two-clock one)
+unset -nocomplain RUN ASYNC_CORE CORE_PERIOD TOP

@@ -1,0 +1,40 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2026 Advanced Micro Devices, Inc. All Rights Reserved.
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2026.1 (win64) Build 6511674 Tue Jun 16 11:02:23 MDT 2026
+| Date         : Fri Oct 23 15:50:18 2026
+| Host         : A-Laptop running 64-bit major release  (build 9200)
+| Command      : report_utilization -hierarchical -file C:/Users/alros/Documents/FPGA-Project/fpga-pipeline/syn/runs/03-single-write-port/utilization.rpt
+| Design       : mdp_itch_top
+| Device       : xc7k70tfbg676-2
+| Speed File   : -2
+| Design State : Routed
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Utilization by Hierarchy
+
+1. Utilization by Hierarchy
+---------------------------
+
++-------------------+--------------------------+------------+------------+---------+------+------+--------+--------+------------+
+|      Instance     |          Module          | Total LUTs | Logic LUTs | LUTRAMs | SRLs |  FFs | RAMB36 | RAMB18 | DSP Blocks |
++-------------------+--------------------------+------------+------------+---------+------+------+--------+--------+------------+
+| mdp_itch_top      |                    (top) |       3985 |       3557 |     428 |    0 | 3376 |      3 |      1 |          0 |
+|   (mdp_itch_top)  |                    (top) |         45 |         45 |       0 |    0 |  416 |      0 |      0 |          0 |
+|   g_mq.u_msg_fifo |                 mdp_fifo |        394 |         38 |     356 |    0 |   29 |      0 |      0 |          0 |
+|   g_oq.u_ord_fifo | mdp_fifo__parameterized0 |        160 |         88 |      72 |    0 |    9 |      0 |      0 |          0 |
+|   u_book          |            mdp_itch_book |       1701 |       1701 |       0 |    0 | 1143 |      3 |      1 |          0 |
+|   u_frame         |           mdp_itch_frame |       1299 |       1299 |       0 |    0 | 1007 |      0 |      0 |          0 |
+|     (u_frame)     |           mdp_itch_frame |        405 |        405 |       0 |    0 |  388 |      0 |      0 |          0 |
+|     u0            |            mdp_itch_unit |        216 |        216 |       0 |    0 |  307 |      0 |      0 |          0 |
+|     u1            |          mdp_itch_unit_0 |        680 |        680 |       0 |    0 |  312 |      0 |      0 |          0 |
+|   u_lat           |            mdp_lat_stats |         43 |         43 |       0 |    0 |  257 |      0 |      0 |          0 |
+|   u_rtc           |              mdp_ptp_rtc |        184 |        184 |       0 |    0 |  104 |      0 |      0 |          0 |
+|   u_tx            |             mdp_order_tx |        200 |        200 |       0 |    0 |  411 |      0 |      0 |          0 |
++-------------------+--------------------------+------------+------------+---------+------+------+--------+--------+------------+
+* Note: The sum of lower-level cells may be larger than their parent cells total, due to cross-hierarchy LUT combining
+
+

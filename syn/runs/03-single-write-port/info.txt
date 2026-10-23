@@ -1,0 +1,4 @@
+run:        03-single-write-port
+date:       2026-10-23 15:46
+git commit: 5b323ef   (rtl: UNCOMMITTED CHANGES IN rtl/)
+top:        mdp_itch_top   ASYNC_CORE=0   part=xc7k70tfbg676-2   period=6.4 ns   core_period=4.0 ns

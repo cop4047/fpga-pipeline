@@ -1,0 +1,376 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2026 Advanced Micro Devices, Inc. All Rights Reserved.
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2026.1 (win64) Build 6511674 Tue Jun 16 11:02:23 MDT 2026
+| Date         : Fri Oct 23 15:50:18 2026
+| Host         : A-Laptop running 64-bit major release  (build 9200)
+| Command      : report_timing -max_paths 5 -sort_by slack -path_type full -file C:/Users/alros/Documents/FPGA-Project/fpga-pipeline/syn/runs/03-single-write-port/worst_paths.rpt
+| Design       : mdp_itch_top
+| Device       : 7k70t-fbg676
+| Speed File   : -2  PRODUCTION 1.12 2017-02-17
+| Design State : Routed
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Timing Report
+
+Slack (MET) :             0.753ns  (required time - arrival time)
+  Source:                 u_book/w_sym_reg[0]/C
+                            (rising edge-triggered cell FDRE clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Destination:            u_book/ord_valid_reg/D
+                            (rising edge-triggered cell FDRE clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            6.400ns  (clk rise@6.400ns - clk rise@0.000ns)
+  Data Path Delay:        5.596ns  (logic 0.803ns (14.350%)  route 4.793ns (85.650%))
+  Logic Levels:           8  (LUT3=1 LUT4=2 LUT5=1 LUT6=4)
+  Clock Path Skew:        -0.027ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.510ns = ( 6.910 - 6.400 ) 
+    Source Clock Delay      (SCD):    0.537ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r  <hidden>
+                         propagated clock network latency
+                                                      0.537     0.537    <hidden>
+    SLICE_X14Y123        FDRE                         0.000     0.537 r  u_book/w_sym_reg[0]/C
+    SLICE_X14Y123        FDRE (Prop_fdre_C_Q)         0.259     0.796 r  u_book/w_sym_reg[0]/Q
+                         net (fo=142, routed)         1.138     1.934    u_book/lvl_waddr[7]
+    SLICE_X2Y101         LUT6 (Prop_lut6_I4_O)        0.043     1.977 r  u_book/tb_ask_lvl_q[3]_i_14/O
+                         net (fo=3, routed)           0.467     2.443    u_book/tb_ask_lvl_q[3]_i_14_n_0
+    SLICE_X6Y101         LUT3 (Prop_lut3_I0_O)        0.047     2.490 r  u_book/tb_ask_lvl_q[3]_i_5/O
+                         net (fo=3, routed)           0.471     2.962    u_book/tb_ask_lvl_q[3]_i_5_n_0
+    SLICE_X7Y101         LUT4 (Prop_lut4_I3_O)        0.145     3.107 r  u_book/tb_ask_lvl_q[5]_i_15/O
+                         net (fo=4, routed)           0.338     3.445    u_book/tb_ask_lvl_q[5]_i_15_n_0
+    SLICE_X7Y100         LUT6 (Prop_lut6_I4_O)        0.137     3.582 f  u_book/tb_ask_lvl_q[2]_i_4/O
+                         net (fo=1, routed)           0.552     4.134    u_book/tb_ask_lvl_q[2]_i_4_n_0
+    SLICE_X5Y109         LUT6 (Prop_lut6_I3_O)        0.043     4.177 f  u_book/tb_ask_lvl_q[2]_i_1/O
+                         net (fo=3, routed)           0.371     4.548    u_book/ask_lvl_c[2]
+    SLICE_X9Y109         LUT4 (Prop_lut4_I3_O)        0.043     4.591 f  u_book/fired[3]_i_6/O
+                         net (fo=1, routed)           0.512     5.103    u_book/fired[3]_i_6_n_0
+    SLICE_X9Y110         LUT6 (Prop_lut6_I2_O)        0.043     5.146 r  u_book/fired[3]_i_3/O
+                         net (fo=5, routed)           0.614     5.759    u_book/fired[3]_i_3_n_0
+    SLICE_X12Y121        LUT5 (Prop_lut5_I4_O)        0.043     5.802 r  u_book/ord_valid_i_1/O
+                         net (fo=1, routed)           0.330     6.133    u_book/ord_valid_i_1_n_0
+    SLICE_X12Y121        FDRE                                         r  u_book/ord_valid_reg/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)        6.400     6.400 r  <hidden>
+                         propagated clock network latency
+                                                      0.510     6.910    <hidden>
+                         clock pessimism              0.000     6.910    <hidden>
+                         clock uncertainty           -0.035     6.875    <hidden>
+    SLICE_X12Y121        FDRE (Setup_fdre_C_D)        0.011     6.886    u_book/ord_valid_reg
+  -------------------------------------------------------------------
+                         required time                          6.886    <hidden>
+                         arrival time                          -6.133    <hidden>
+  -------------------------------------------------------------------
+                         slack                                  0.753    <hidden>
+
+Slack (MET) :             0.839ns  (required time - arrival time)
+  Source:                 u_book/lvl_mem_reg/CLKARDCLK
+                            (rising edge-triggered cell RAMB18E1 clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Destination:            u_book/mask_reg[7][58]/D
+                            (rising edge-triggered cell FDRE clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            6.400ns  (clk rise@6.400ns - clk rise@0.000ns)
+  Data Path Delay:        5.533ns  (logic 2.835ns (51.241%)  route 2.698ns (48.759%))
+  Logic Levels:           12  (CARRY4=7 LUT3=1 LUT4=2 LUT5=1 LUT6=1)
+  Clock Path Skew:        -0.027ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.510ns = ( 6.910 - 6.400 ) 
+    Source Clock Delay      (SCD):    0.537ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r  <hidden>
+                         propagated clock network latency
+                                                      0.537     0.537    <hidden>
+    RAMB18_X0Y48         RAMB18E1                     0.000     0.537 r  u_book/lvl_mem_reg/CLKARDCLK
+    RAMB18_X0Y48         RAMB18E1 (Prop_ramb18e1_CLKARDCLK_DOADO[5])
+                                                      1.800     2.337 r  u_book/lvl_mem_reg/DOADO[5]
+                         net (fo=2, routed)           0.572     2.909    u_book/lvl_rd[5]
+    SLICE_X11Y121        LUT3 (Prop_lut3_I0_O)        0.043     2.952 r  u_book/lvl_mem_reg_i_60/O
+                         net (fo=1, routed)           0.000     2.952    u_book/lvl_mem_reg_i_60_n_0
+    SLICE_X11Y121        CARRY4 (Prop_carry4_S[1]_CO[3])
+                                                      0.267     3.219 r  u_book/lvl_mem_reg_i_44/CO[3]
+                         net (fo=1, routed)           0.000     3.219    u_book/lvl_mem_reg_i_44_n_0
+    SLICE_X11Y122        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.272 r  u_book/lvl_mem_reg_i_43/CO[3]
+                         net (fo=1, routed)           0.000     3.272    u_book/lvl_mem_reg_i_43_n_0
+    SLICE_X11Y123        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.325 r  u_book/lvl_mem_reg_i_42/CO[3]
+                         net (fo=1, routed)           0.000     3.325    u_book/lvl_mem_reg_i_42_n_0
+    SLICE_X11Y124        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.378 r  u_book/lvl_mem_reg_i_49/CO[3]
+                         net (fo=1, routed)           0.007     3.386    u_book/lvl_mem_reg_i_49_n_0
+    SLICE_X11Y125        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.439 r  u_book/lvl_mem_reg_i_48/CO[3]
+                         net (fo=1, routed)           0.000     3.439    u_book/lvl_mem_reg_i_48_n_0
+    SLICE_X11Y126        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.492 r  u_book/lvl_mem_reg_i_47/CO[3]
+                         net (fo=1, routed)           0.000     3.492    u_book/lvl_mem_reg_i_47_n_0
+    SLICE_X11Y127        CARRY4 (Prop_carry4_CI_O[2])
+                                                      0.111     3.603 r  u_book/lvl_mem_reg_i_46/O[2]
+                         net (fo=2, routed)           0.455     4.057    u_book/new_q[30]
+    SLICE_X8Y127         LUT4 (Prop_lut4_I0_O)        0.122     4.179 r  u_book/mask[7][63]_i_12/O
+                         net (fo=1, routed)           0.248     4.427    u_book/mask[7][63]_i_12_n_0
+    SLICE_X8Y126         LUT5 (Prop_lut5_I4_O)        0.043     4.470 r  u_book/mask[7][63]_i_8/O
+                         net (fo=4, routed)           0.523     4.993    u_book/mask[7][63]_i_8_n_0
+    SLICE_X11Y119        LUT4 (Prop_lut4_I2_O)        0.052     5.045 r  u_book/mask[7][63]_i_2/O
+                         net (fo=128, routed)         0.893     5.938    u_book/mask[7][63]_i_2_n_0
+    SLICE_X4Y98          LUT6 (Prop_lut6_I0_O)        0.132     6.070 r  u_book/mask[7][58]_i_1/O
+                         net (fo=1, routed)           0.000     6.070    u_book/mask[7][58]_i_1_n_0
+    SLICE_X4Y98          FDRE                                         r  u_book/mask_reg[7][58]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)        6.400     6.400 r  <hidden>
+                         propagated clock network latency
+                                                      0.510     6.910    <hidden>
+                         clock pessimism              0.000     6.910    <hidden>
+                         clock uncertainty           -0.035     6.875    <hidden>
+    SLICE_X4Y98          FDRE (Setup_fdre_C_D)        0.034     6.909    u_book/mask_reg[7][58]
+  -------------------------------------------------------------------
+                         required time                          6.909    <hidden>
+                         arrival time                          -6.070    <hidden>
+  -------------------------------------------------------------------
+                         slack                                  0.839    <hidden>
+
+Slack (MET) :             0.862ns  (required time - arrival time)
+  Source:                 u_book/lvl_mem_reg/CLKARDCLK
+                            (rising edge-triggered cell RAMB18E1 clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Destination:            u_book/mask_reg[3][57]/D
+                            (rising edge-triggered cell FDRE clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            6.400ns  (clk rise@6.400ns - clk rise@0.000ns)
+  Data Path Delay:        5.510ns  (logic 2.835ns (51.451%)  route 2.675ns (48.549%))
+  Logic Levels:           12  (CARRY4=7 LUT3=1 LUT4=2 LUT5=1 LUT6=1)
+  Clock Path Skew:        -0.027ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.510ns = ( 6.910 - 6.400 ) 
+    Source Clock Delay      (SCD):    0.537ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r  <hidden>
+                         propagated clock network latency
+                                                      0.537     0.537    <hidden>
+    RAMB18_X0Y48         RAMB18E1                     0.000     0.537 r  u_book/lvl_mem_reg/CLKARDCLK
+    RAMB18_X0Y48         RAMB18E1 (Prop_ramb18e1_CLKARDCLK_DOADO[5])
+                                                      1.800     2.337 r  u_book/lvl_mem_reg/DOADO[5]
+                         net (fo=2, routed)           0.572     2.909    u_book/lvl_rd[5]
+    SLICE_X11Y121        LUT3 (Prop_lut3_I0_O)        0.043     2.952 r  u_book/lvl_mem_reg_i_60/O
+                         net (fo=1, routed)           0.000     2.952    u_book/lvl_mem_reg_i_60_n_0
+    SLICE_X11Y121        CARRY4 (Prop_carry4_S[1]_CO[3])
+                                                      0.267     3.219 r  u_book/lvl_mem_reg_i_44/CO[3]
+                         net (fo=1, routed)           0.000     3.219    u_book/lvl_mem_reg_i_44_n_0
+    SLICE_X11Y122        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.272 r  u_book/lvl_mem_reg_i_43/CO[3]
+                         net (fo=1, routed)           0.000     3.272    u_book/lvl_mem_reg_i_43_n_0
+    SLICE_X11Y123        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.325 r  u_book/lvl_mem_reg_i_42/CO[3]
+                         net (fo=1, routed)           0.000     3.325    u_book/lvl_mem_reg_i_42_n_0
+    SLICE_X11Y124        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.378 r  u_book/lvl_mem_reg_i_49/CO[3]
+                         net (fo=1, routed)           0.007     3.386    u_book/lvl_mem_reg_i_49_n_0
+    SLICE_X11Y125        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.439 r  u_book/lvl_mem_reg_i_48/CO[3]
+                         net (fo=1, routed)           0.000     3.439    u_book/lvl_mem_reg_i_48_n_0
+    SLICE_X11Y126        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.492 r  u_book/lvl_mem_reg_i_47/CO[3]
+                         net (fo=1, routed)           0.000     3.492    u_book/lvl_mem_reg_i_47_n_0
+    SLICE_X11Y127        CARRY4 (Prop_carry4_CI_O[2])
+                                                      0.111     3.603 r  u_book/lvl_mem_reg_i_46/O[2]
+                         net (fo=2, routed)           0.455     4.057    u_book/new_q[30]
+    SLICE_X8Y127         LUT4 (Prop_lut4_I0_O)        0.122     4.179 r  u_book/mask[7][63]_i_12/O
+                         net (fo=1, routed)           0.248     4.427    u_book/mask[7][63]_i_12_n_0
+    SLICE_X8Y126         LUT5 (Prop_lut5_I4_O)        0.043     4.470 r  u_book/mask[7][63]_i_8/O
+                         net (fo=4, routed)           0.523     4.993    u_book/mask[7][63]_i_8_n_0
+    SLICE_X11Y119        LUT4 (Prop_lut4_I2_O)        0.052     5.045 r  u_book/mask[7][63]_i_2/O
+                         net (fo=128, routed)         0.870     5.915    u_book/mask[7][63]_i_2_n_0
+    SLICE_X7Y98          LUT6 (Prop_lut6_I0_O)        0.132     6.047 r  u_book/mask[3][57]_i_1/O
+                         net (fo=1, routed)           0.000     6.047    u_book/mask[3][57]_i_1_n_0
+    SLICE_X7Y98          FDRE                                         r  u_book/mask_reg[3][57]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)        6.400     6.400 r  <hidden>
+                         propagated clock network latency
+                                                      0.510     6.910    <hidden>
+                         clock pessimism              0.000     6.910    <hidden>
+                         clock uncertainty           -0.035     6.875    <hidden>
+    SLICE_X7Y98          FDRE (Setup_fdre_C_D)        0.034     6.909    u_book/mask_reg[3][57]
+  -------------------------------------------------------------------
+                         required time                          6.909    <hidden>
+                         arrival time                          -6.047    <hidden>
+  -------------------------------------------------------------------
+                         slack                                  0.862    <hidden>
+
+Slack (MET) :             0.874ns  (required time - arrival time)
+  Source:                 u_book/lvl_mem_reg/CLKARDCLK
+                            (rising edge-triggered cell RAMB18E1 clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Destination:            u_book/mask_reg[5][57]/D
+                            (rising edge-triggered cell FDRE clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            6.400ns  (clk rise@6.400ns - clk rise@0.000ns)
+  Data Path Delay:        5.497ns  (logic 2.835ns (51.577%)  route 2.662ns (48.423%))
+  Logic Levels:           12  (CARRY4=7 LUT3=1 LUT4=2 LUT5=1 LUT6=1)
+  Clock Path Skew:        -0.027ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.510ns = ( 6.910 - 6.400 ) 
+    Source Clock Delay      (SCD):    0.537ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r  <hidden>
+                         propagated clock network latency
+                                                      0.537     0.537    <hidden>
+    RAMB18_X0Y48         RAMB18E1                     0.000     0.537 r  u_book/lvl_mem_reg/CLKARDCLK
+    RAMB18_X0Y48         RAMB18E1 (Prop_ramb18e1_CLKARDCLK_DOADO[5])
+                                                      1.800     2.337 r  u_book/lvl_mem_reg/DOADO[5]
+                         net (fo=2, routed)           0.572     2.909    u_book/lvl_rd[5]
+    SLICE_X11Y121        LUT3 (Prop_lut3_I0_O)        0.043     2.952 r  u_book/lvl_mem_reg_i_60/O
+                         net (fo=1, routed)           0.000     2.952    u_book/lvl_mem_reg_i_60_n_0
+    SLICE_X11Y121        CARRY4 (Prop_carry4_S[1]_CO[3])
+                                                      0.267     3.219 r  u_book/lvl_mem_reg_i_44/CO[3]
+                         net (fo=1, routed)           0.000     3.219    u_book/lvl_mem_reg_i_44_n_0
+    SLICE_X11Y122        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.272 r  u_book/lvl_mem_reg_i_43/CO[3]
+                         net (fo=1, routed)           0.000     3.272    u_book/lvl_mem_reg_i_43_n_0
+    SLICE_X11Y123        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.325 r  u_book/lvl_mem_reg_i_42/CO[3]
+                         net (fo=1, routed)           0.000     3.325    u_book/lvl_mem_reg_i_42_n_0
+    SLICE_X11Y124        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.378 r  u_book/lvl_mem_reg_i_49/CO[3]
+                         net (fo=1, routed)           0.007     3.386    u_book/lvl_mem_reg_i_49_n_0
+    SLICE_X11Y125        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.439 r  u_book/lvl_mem_reg_i_48/CO[3]
+                         net (fo=1, routed)           0.000     3.439    u_book/lvl_mem_reg_i_48_n_0
+    SLICE_X11Y126        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.492 r  u_book/lvl_mem_reg_i_47/CO[3]
+                         net (fo=1, routed)           0.000     3.492    u_book/lvl_mem_reg_i_47_n_0
+    SLICE_X11Y127        CARRY4 (Prop_carry4_CI_O[2])
+                                                      0.111     3.603 r  u_book/lvl_mem_reg_i_46/O[2]
+                         net (fo=2, routed)           0.455     4.057    u_book/new_q[30]
+    SLICE_X8Y127         LUT4 (Prop_lut4_I0_O)        0.122     4.179 r  u_book/mask[7][63]_i_12/O
+                         net (fo=1, routed)           0.248     4.427    u_book/mask[7][63]_i_12_n_0
+    SLICE_X8Y126         LUT5 (Prop_lut5_I4_O)        0.043     4.470 r  u_book/mask[7][63]_i_8/O
+                         net (fo=4, routed)           0.523     4.993    u_book/mask[7][63]_i_8_n_0
+    SLICE_X11Y119        LUT4 (Prop_lut4_I2_O)        0.052     5.045 r  u_book/mask[7][63]_i_2/O
+                         net (fo=128, routed)         0.857     5.902    u_book/mask[7][63]_i_2_n_0
+    SLICE_X7Y98          LUT6 (Prop_lut6_I0_O)        0.132     6.034 r  u_book/mask[5][57]_i_1/O
+                         net (fo=1, routed)           0.000     6.034    u_book/mask[5][57]_i_1_n_0
+    SLICE_X7Y98          FDRE                                         r  u_book/mask_reg[5][57]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)        6.400     6.400 r  <hidden>
+                         propagated clock network latency
+                                                      0.510     6.910    <hidden>
+                         clock pessimism              0.000     6.910    <hidden>
+                         clock uncertainty           -0.035     6.875    <hidden>
+    SLICE_X7Y98          FDRE (Setup_fdre_C_D)        0.033     6.908    u_book/mask_reg[5][57]
+  -------------------------------------------------------------------
+                         required time                          6.908    <hidden>
+                         arrival time                          -6.034    <hidden>
+  -------------------------------------------------------------------
+                         slack                                  0.874    <hidden>
+
+Slack (MET) :             0.883ns  (required time - arrival time)
+  Source:                 u_book/lvl_mem_reg/CLKARDCLK
+                            (rising edge-triggered cell RAMB18E1 clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Destination:            u_book/mask_reg[1][62]/D
+                            (rising edge-triggered cell FDRE clocked by clk  {rise@0.000ns fall@3.200ns period=6.400ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            6.400ns  (clk rise@6.400ns - clk rise@0.000ns)
+  Data Path Delay:        5.489ns  (logic 2.835ns (51.651%)  route 2.654ns (48.349%))
+  Logic Levels:           12  (CARRY4=7 LUT3=1 LUT4=2 LUT5=1 LUT6=1)
+  Clock Path Skew:        -0.027ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    0.510ns = ( 6.910 - 6.400 ) 
+    Source Clock Delay      (SCD):    0.537ns
+    Clock Pessimism Removal (CPR):    0.000ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r  <hidden>
+                         propagated clock network latency
+                                                      0.537     0.537    <hidden>
+    RAMB18_X0Y48         RAMB18E1                     0.000     0.537 r  u_book/lvl_mem_reg/CLKARDCLK
+    RAMB18_X0Y48         RAMB18E1 (Prop_ramb18e1_CLKARDCLK_DOADO[5])
+                                                      1.800     2.337 r  u_book/lvl_mem_reg/DOADO[5]
+                         net (fo=2, routed)           0.572     2.909    u_book/lvl_rd[5]
+    SLICE_X11Y121        LUT3 (Prop_lut3_I0_O)        0.043     2.952 r  u_book/lvl_mem_reg_i_60/O
+                         net (fo=1, routed)           0.000     2.952    u_book/lvl_mem_reg_i_60_n_0
+    SLICE_X11Y121        CARRY4 (Prop_carry4_S[1]_CO[3])
+                                                      0.267     3.219 r  u_book/lvl_mem_reg_i_44/CO[3]
+                         net (fo=1, routed)           0.000     3.219    u_book/lvl_mem_reg_i_44_n_0
+    SLICE_X11Y122        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.272 r  u_book/lvl_mem_reg_i_43/CO[3]
+                         net (fo=1, routed)           0.000     3.272    u_book/lvl_mem_reg_i_43_n_0
+    SLICE_X11Y123        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.325 r  u_book/lvl_mem_reg_i_42/CO[3]
+                         net (fo=1, routed)           0.000     3.325    u_book/lvl_mem_reg_i_42_n_0
+    SLICE_X11Y124        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.378 r  u_book/lvl_mem_reg_i_49/CO[3]
+                         net (fo=1, routed)           0.007     3.386    u_book/lvl_mem_reg_i_49_n_0
+    SLICE_X11Y125        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.439 r  u_book/lvl_mem_reg_i_48/CO[3]
+                         net (fo=1, routed)           0.000     3.439    u_book/lvl_mem_reg_i_48_n_0
+    SLICE_X11Y126        CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.053     3.492 r  u_book/lvl_mem_reg_i_47/CO[3]
+                         net (fo=1, routed)           0.000     3.492    u_book/lvl_mem_reg_i_47_n_0
+    SLICE_X11Y127        CARRY4 (Prop_carry4_CI_O[2])
+                                                      0.111     3.603 r  u_book/lvl_mem_reg_i_46/O[2]
+                         net (fo=2, routed)           0.455     4.057    u_book/new_q[30]
+    SLICE_X8Y127         LUT4 (Prop_lut4_I0_O)        0.122     4.179 r  u_book/mask[7][63]_i_12/O
+                         net (fo=1, routed)           0.248     4.427    u_book/mask[7][63]_i_12_n_0
+    SLICE_X8Y126         LUT5 (Prop_lut5_I4_O)        0.043     4.470 r  u_book/mask[7][63]_i_8/O
+                         net (fo=4, routed)           0.523     4.993    u_book/mask[7][63]_i_8_n_0
+    SLICE_X11Y119        LUT4 (Prop_lut4_I2_O)        0.052     5.045 r  u_book/mask[7][63]_i_2/O
+                         net (fo=128, routed)         0.849     5.894    u_book/mask[7][63]_i_2_n_0
+    SLICE_X3Y99          LUT6 (Prop_lut6_I0_O)        0.132     6.026 r  u_book/mask[1][62]_i_1/O
+                         net (fo=1, routed)           0.000     6.026    u_book/mask[1][62]_i_1_n_0
+    SLICE_X3Y99          FDRE                                         r  u_book/mask_reg[1][62]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)        6.400     6.400 r  <hidden>
+                         propagated clock network latency
+                                                      0.510     6.910    <hidden>
+                         clock pessimism              0.000     6.910    <hidden>
+                         clock uncertainty           -0.035     6.875    <hidden>
+    SLICE_X3Y99          FDRE (Setup_fdre_C_D)        0.034     6.909    u_book/mask_reg[1][62]
+  -------------------------------------------------------------------
+                         required time                          6.909    <hidden>
+                         arrival time                          -6.026    <hidden>
+  -------------------------------------------------------------------
+                         slack                                  0.883    <hidden>
+
+
+
+
