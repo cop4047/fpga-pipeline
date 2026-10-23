@@ -1,0 +1,4 @@
+run:        02-bram-order-table
+date:       2026-10-22 17:16
+git commit: 93a3062   (rtl: clean)
+top:        mdp_itch_top   ASYNC_CORE=1   part=xc7k70tfbg676-2   period=6.4 ns   core_period=4.0 ns
