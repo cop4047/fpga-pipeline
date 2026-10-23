@@ -40,7 +40,8 @@ kept and still builds; it is described in **[docs/SPEC.md](docs/SPEC.md)**.
 | Mutation testing | framer 16/16 non-equivalent bugs caught (17 injected); book 49/49 (50 injected); timestamp/clock/CDC additions 43/43 non-equivalent caught (45 injected: RTC 8, FIFO 13, framer stamps 6, pipeline stamps/stats 13, CDC wiring 5). Each equivalent mutant is explained in the script. |
 | Lint | Verilator `-Wall` clean |
 | yosys xc7 estimate | ≈ 4,300 LUT, ≈ 3,000 FF, 4 block RAMs (*estimate only*) |
-| **Vivado timing / utilisation** | **not measured yet** for this design. Run `syn/build.tcl` then `syn/sweep.tcl`. |
+| **Vivado timing** (post-route, out-of-context, xc7k70tfbg676-2) | One clock, after two iterations (`docs/TIMING_LOG.md`): WNS **+0.215 ns @ 200 MHz, +0.024 ns @ 222 MHz**, −0.249 @ 250, −0.799 @ 286 (one run each). Placement noise is about ±0.5 ns at the failing targets, and +0.024 is inside it: read this as "about 222 MHz", not "closes with margin". Iteration 1, order table into block RAM: book 7,308 → 1,701 LUTs, Fmax unchanged (222 MHz −0.406). Iteration 2, empty-level test by comparison instead of the sum: the level-RAM → carry chain → occupancy-mask path left the worst-path list and 222 MHz met (−0.406 → +0.024). The next limits are `mdp_lat_stats` (two chained 40-bit carries), the level add into the level RAM, and the framer control cone. Out-of-context runs without `HD.CLK_SRC`, so clock skew is not estimated. The two-clock build and `report_cdc` have not been run in Vivado. The `tns` column in sweep CSVs is unreliable (always 0.0). |
+| Vivado utilisation (6.4 ns run) | 4,036 LUTs (3,608 logic + 428 LUTRAM; 9.8 % of the xc7k70t), 3,376 FF, 3 RAMB36 + 1 RAMB18, 0 DSP. Book 1,755 LUTs, framer 1,296. |
 | Hardware | not yet |
 
 Latency is *core logic between the AXI-Streams* in simulation. It excludes
@@ -144,11 +145,12 @@ docs/      ITCH50.md (current design)  PTP_CDC.md (timestamps + CDC)  SPEC.md (I
 
 ## Next steps
 
-1. **Vivado on the ITCH 5.0 design.** `source build.tcl`, `source sweep.tcl`, read
-   `syn/out_itch/worst_paths_*.rpt`, record the result as new rows of the timing
-   log. Expect 200 MHz to need work (the D2 price-to-level compare and the
-   best-ask encode are the likely long paths). A real "WNS −x → +y after Z" entry
-   is worth more than any claim.
+1. **Timing.** Two iterations are done and logged (`docs/TIMING_LOG.md`). The next
+   limits at 250 MHz, in order: `mdp_lat_stats` (register the 40-bit latency before
+   comparing it with min/max; instrumentation only), the book's level add into the
+   level RAM and the 32-bit remaining-quantity subtract, then the framer's
+   byte-count control cone. Then run `report_cdc` and a two-clock Vivado build
+   before saying anything about the CDC in hardware.
 2. **Own every line.** Read the RTL against `docs/INTERVIEW.md` until you can
    redraw each block and explain each trade-off without the files. Interviewers
    will ask you to modify the design on a whiteboard.
@@ -164,8 +166,9 @@ docs/      ITCH50.md (current design)  PTP_CDC.md (timestamps + CDC)  SPEC.md (I
 
 ## What you can honestly put on the CV
 
-Say *simulated* until you have hardware numbers. Add a timing clause only after
-the ITCH design has its own Vivado run.
+Say *simulated* until you have hardware numbers. The ITCH design now has its own
+Vivado runs, so a timing clause is allowed: quote the number with its margin
+(222 MHz met by 0.024 ns in one run; 250 MHz fails by 0.25 ns).
 
 > **Low-latency ITCH 5.0 market-data-to-order FPGA pipeline** (SystemVerilog,
 > cocotb, Python, C++) — Designed a 64-bit AXI-Stream pipeline that parses
@@ -179,8 +182,8 @@ the ITCH design has its own Vivado run.
 > (30 M msgs/s) with constrained-random traffic and mutation testing (65 of 65
 > non-equivalent injected bugs caught across framer and book).
 
-Do not claim a hardware latency, "real ITCH data" (not replayed yet), or any
-Fmax for this design before it is measured. The 200 MHz post-route result belongs
+Do not claim a hardware latency, "real ITCH data" (not replayed yet), or an Fmax
+above what `docs/TIMING_LOG.md` shows. The 200 MHz / +0.088 ns result belongs
 to the earlier ITCH-lite core and must be labelled as such.
 
 ## Honest limitations
