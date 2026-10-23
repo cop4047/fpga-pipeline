@@ -93,10 +93,12 @@ BOOK_MUTANTS = [
     (BOOK, "wire        new_nz    = !exe_all && (rem_diff[31:0] != 32'd0);", "wire        new_nz    = !exe_all;", "fully executed order stays valid"),
     (BOOK, "w_nrem  <= n_shs;\n                        w_nz    <= 1'b1;\n                    end else if", "w_nrem  <= 32'd0;\n                        w_nz    <= 1'b1;\n                    end else if", "added order stores zero remaining"),
     # --- level RAM / occupancy
-    (BOOK, "wire [31:0] new_q = w_sub ? (lvl_rd - w_delta) : (lvl_rd + w_delta);", "wire [31:0] new_q = w_sub ? (lvl_rd + w_delta) : (lvl_rd - w_delta);", "add/subtract swapped (equivalent)"),
-    # Equivalent: swapping + and - stores the NEGATED level quantity.  Only "is the level empty?"
-    # is observable (no port exposes aggregate size), and negation preserves zero / non-zero.
-    (BOOK, "mask[{w_sym, w_side}][w_lvl] <= (new_q != 32'd0);", "mask[{w_sym, w_side}][w_lvl] <= (new_q[15:0] != 16'd0);", "occupancy bit from low half"),
+    (BOOK, "wire [31:0] new_q = w_sub ? (lvl_rd - w_delta) : (lvl_rd + w_delta);", "wire [31:0] new_q = w_sub ? (lvl_rd + w_delta) : (lvl_rd - w_delta);", "add/subtract swapped"),
+    # (Used to be equivalent: negated quantities keep zero / non-zero.  Since the empty test compares lvl_rd with
+    # +/-delta directly, stored values must be the true ones, so this is now caught.)
+    (BOOK, "wire        lvl_nz       = (lvl_rd != lvl_zero_cmp);", "wire        lvl_nz       = (lvl_rd[15:0] != lvl_zero_cmp[15:0]);", "occupancy bit from low half"),
+    (BOOK, "wire [31:0] lvl_zero_cmp = w_sub ? w_delta : (32'd0 - w_delta);", "wire [31:0] lvl_zero_cmp = w_sub ? w_delta : w_delta;", "empty test for add uses +d instead of -d"),
+    (BOOK, "wire [31:0] lvl_zero_cmp = w_sub ? w_delta : (32'd0 - w_delta);", "wire [31:0] lvl_zero_cmp = w_sub ? (32'd0 - w_delta) : w_delta;", "empty test sign swapped"),
     (BOOK, "wire              lvl_wr_en   = init_busy | lvl_we;", "wire              lvl_wr_en   = lvl_we;", "level RAM not cleared after reset"),
     (BOOK, "wire              ord_wr_en   = init_busy | ord_we;", "wire              ord_wr_en   = ord_we;", "order table not cleared after reset"),
     # --- replace sequencing

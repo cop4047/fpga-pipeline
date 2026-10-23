@@ -264,6 +264,14 @@ module mdp_itch_book #(
 
     wire [31:0] new_q = w_sub ? (lvl_rd - w_delta) : (lvl_rd + w_delta);
 
+    // "Is the level empty after this update?"  Only needs equality, not the 32-bit sum, so the occupancy
+    // mask no longer waits for the carry chain (run 03: block RAM -> 8 CARRY4 -> mask was the worst path).
+    //   subtract:  lvl_rd - d == 0  <=>  lvl_rd == d
+    //   add:       lvl_rd + d == 0 (mod 2^32)  <=>  lvl_rd == -d
+    // -d comes from the w_delta register, so it is ready well before the block RAM output.
+    wire [31:0] lvl_zero_cmp = w_sub ? w_delta : (32'd0 - w_delta);
+    wire        lvl_nz       = (lvl_rd != lvl_zero_cmp);
+
     always_comb begin
         ord_we    = 1'b0;
         ord_waddr = ph ? r_idx2 : r_idx1;
@@ -445,7 +453,7 @@ module mdp_itch_book #(
                 end
 
                 S_WR: begin
-                    mask[{w_sym, w_side}][w_lvl] <= (new_q != 32'd0);
+                    mask[{w_sym, w_side}][w_lvl] <= lvl_nz;
                     if (t_rep && !ph) begin                     // now add the replacement
                         ph      <= 1'b1;
                         w_lvl   <= q_lvl;

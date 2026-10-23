@@ -498,6 +498,12 @@ async def test_directed_edges(dut):
         I.pack_add(11, B, 0x80000000, A0, base + 4 * tick),
         I.pack_add(12, B, 0x80000000, A0, base + 4 * tick),              # level total wraps to 0
         I.pack_add(13, B, 0xFFFFFFFF, A0, base + 5 * tick),
+        # a level that already holds exactly the size being added (empty test compares level with +/-size),
+        # and totals that wrap to 0 with sizes that are NOT their own negative
+        I.pack_add(14, B, 100, A0, base + 10 * tick),
+        I.pack_add(15, B, 100, A0, base + 10 * tick),                    # equal size at the same level
+        I.pack_add(16, B, 0xC0000000, A0, base + 11 * tick),
+        I.pack_add(17, B, 0x40000000, A0, base + 11 * tick),             # total wraps to 0
         I.pack_exec(10, 65536),
         I.pack_exec(13, 0xFFFFFFFF),
         I.pack_exec(11, 0x80000000), I.pack_exec(12, 1),
